@@ -10,11 +10,9 @@ public class Test : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // The data to send
-        var data = new Data { a = "some value" };
 
         // Send the data as a POST request to the web app's URL
-        StartCoroutine(PostRequest(url, JsonUtility.ToJson(data)));
+        StartCoroutine(PostRequest(url, PlayerPrefs.GetString("MyObject", "{}")));
         
     }
     IEnumerator GetRequest(string url)
@@ -56,13 +54,7 @@ public class Test : MonoBehaviour
             Debug.Log(request.downloadHandler.text);
         }
 
-        StartCoroutine(GetRequest(url));
+        //StartCoroutine(GetRequest(url));
     }
 
-}
-
-[System.Serializable]
-public class Data
-{
-    public string a;
 }

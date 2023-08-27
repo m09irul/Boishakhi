@@ -64,6 +64,8 @@ namespace InteractiveCalculator
                     OnPressedNumber(9);
                 else if (Input.GetKeyDown(KeyCode.Backspace))
                     OnPressedDelete();
+                else if (Input.GetKeyDown(KeyCode.Escape))
+                    OnPressedClearAll();
 
                 else if (Input.GetKeyDown(KeyCode.Period) || Input.GetKeyDown(KeyCode.KeypadPeriod))
                     OnPressedOperator(".");
