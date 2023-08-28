@@ -154,32 +154,32 @@ public class DailySellController : MonoBehaviour
         string time = DateTime.Now.ToString("HH:mm:ss");
 
         existingJson = PlayerPrefs.GetString(jsonPrefId, "{}");
-        var jsonData = JsonConvert.DeserializeObject<Dictionary<string, object>>(existingJson);
-        List<object> dateArray;
+        JObject jsonData = JObject.Parse(existingJson);
+        JArray dateArray;
 
         // Check if current date exists in JSON data
-        if (jsonData.ContainsKey(dateString))
+        if (jsonData[dateString] != null)
         {
             // Append new data to existing date array
-            dateArray = (List<object>)jsonData[dateString];
+            dateArray = (JArray)jsonData[dateString];
         }
         else
         {
             PlayerPrefs.SetInt(id, 1);
 
             // Create new date array and append to JSON data
-            dateArray = new List<object>();
+            dateArray = new JArray();
+
         }
 
-        var newData = new Dictionary<string, object>
-        {
-            ["id"] = PlayerPrefs.GetInt(id, 1),
-            ["sellTo"] = sellToInfo,
-            ["price"] = price,
-            ["cash_in"] = cash_in,
-            ["cash_out"] = cash_out,
-            ["time"] = time
-        };
+        JObject newData = new JObject(
+                new JProperty("id", PlayerPrefs.GetInt(id, 1)),
+                new JProperty("sellTo", sellToInfo),
+                new JProperty("price", price),
+                new JProperty("cash_in", cash_in),
+                new JProperty("cash_out", cash_out),
+                new JProperty("time", time)
+            );
         dateArray.Add(newData);
         jsonData[dateString] = dateArray;
 
@@ -188,17 +188,16 @@ public class DailySellController : MonoBehaviour
 
         //get total sell price
         int sum = 0;
-        foreach (var item in dateArray)
+        foreach (var item in jsonData[dateString])
         {
-            var itemDict = (Dictionary<string, object>)item;
-            if (int.TryParse((string)itemDict["price"], out int tmpPrice))
+            if (int.TryParse((string)item["price"], out int tmpPrice))
             {
                 sum += tmpPrice;
             }
         }
 
         // Store updated JSON data in PlayerPrefs
-        string json = JsonConvert.SerializeObject(jsonData);
+        string json = jsonData.ToString();
         Debug.Log(json);
 
         PlayerPrefs.SetString(jsonPrefId, json);

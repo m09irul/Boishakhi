@@ -12,7 +12,7 @@ public class Test : MonoBehaviour
     {
 
         // Send the data as a POST request to the web app's URL
-        StartCoroutine(PostRequest(url, PlayerPrefs.GetString("MyObject", "{}")));
+       // StartCoroutine(PostRequest(url, PlayerPrefs.GetString("MyObject", "{}")));
         
     }
     IEnumerator GetRequest(string url)
@@ -33,7 +33,7 @@ public class Test : MonoBehaviour
             Debug.Log(request.downloadHandler.text);
         }
     }
-    IEnumerator PostRequest(string url, string json)
+    public IEnumerator PostRequest(string json)
     {
         // Create a new UnityWebRequest and set the method to POST
         var request = new UnityWebRequest(url, "POST");

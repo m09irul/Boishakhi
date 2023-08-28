@@ -11,6 +11,8 @@ using Newtonsoft.Json;
 
 public class ManagementController : MonoBehaviour
 {
+    public Test test;
+
     public TextMeshProUGUI[] S_D_expenseTexts;
     public TextMeshProUGUI cigarCashInText;
 
@@ -110,166 +112,254 @@ public class ManagementController : MonoBehaviour
     }
     void GenerateDokanJson()
     {
-        // Create a dictionary to hold the final data
-        var data = new Dictionary<string, object>
+        // Create a JObject to hold the final data
+        var data = new JObject
         {
-            [dateString] = new Dictionary<string, object>
-            {
-                ["Baki"] = bakiField.text,
-                ["Expense"] = new List<object>(),
-                ["Purchase"] = new List<object>()
+            { dateString, new JObject
+                {
+                    { "Baki", bakiField.text },
+                    { "Expense", new JArray() },
+                    { "Purchase", new JArray() }
+                }
             }
         };
 
-        //populate expense
-        ((List<object>)((Dictionary<string, object>)data[dateString])["Expense"]).Add(new Dictionary<string, object>
+        // Populate expense
+        ((JArray)data[dateString]["Expense"]).Add(new JObject
         {
-            ["Shanto"] = new Dictionary<string, object>
-            {
-                ["FromCash"] = expenseFields[0].text,
-                ["FromFund"] = ""
+            { "Shanto", new JObject
+                {
+                    { "FromCash", expenseFields[0].text },
+                    { "FromFund", "" }
+                }
             }
         });
-        ((List<object>)((Dictionary<string, object>)data[dateString])["Expense"]).Add(new Dictionary<string, object>
+        ((JArray)data[dateString]["Expense"]).Add(new JObject
         {
-            ["Dokan"] = new Dictionary<string, object>
-            {
-                ["FromCash"] = expenseFields[1].text,
-                ["FromFund"] = ""
+            { "Dokan", new JObject
+                {
+                    { "FromCash", expenseFields[1].text },
+                    { "FromFund", "" }
+                }
             }
         });
 
-        // Loop through each expense field and add the data to the dictionary
+        // Loop through each expense field and add the data to the JObject
         for (int i = 2; i < expenseFields.Count - 2; i += 3)
         {
-            ((List<object>)((Dictionary<string, object>)data[dateString])["Expense"]).Add(new Dictionary<string, object>
+            ((JArray)data[dateString]["Expense"]).Add(new JObject
             {
-                [expenseFields[i].text] = new Dictionary<string, object>
-                {
-                    ["FromCash"] = expenseFields[i + 1].text,
-                    ["FromFund"] = expenseFields[i + 2].text
+                { expenseFields[i].text, new JObject
+                    {
+                        { "FromCash", expenseFields[i + 1].text },
+                        { "FromFund", expenseFields[i + 2].text }
+                    }
                 }
             });
         }
 
-        //populate purchase
+        // Populate purchase
 
-        // Loop through each purchase field and add the data to the dictionary
+        // Loop through each purchase field and add the data to the JObject
         for (int i = 0; i < purchaseFields.Count - 2; i += 3)
         {
-            ((List<object>)((Dictionary<string, object>)data[dateString])["Purchase"]).Add(new Dictionary<string, object>
+            ((JArray)data[dateString]["Purchase"]).Add(new JObject
             {
-                [purchaseFields[i].text] = new Dictionary<string, object>
-                {
-                    ["FromCash"] = purchaseFields[i + 1].text,
-                    ["FromFund"] = purchaseFields[i + 2].text
+                { purchaseFields[i].text, new JObject
+                    {
+                        { "FromCash", purchaseFields[i + 1].text },
+                        { "FromFund", purchaseFields[i + 2].text }
+                    }
                 }
             });
         }
 
         // Convert the data into a JSON string
-        string json = JsonConvert.SerializeObject(data);
+        string json = data.ToString();
 
         // Output the JSON string
         print(json);
+
+        ShowDailySellSummary(json);
     }
+
     void GenerateCigarJson()
     {
-        // Create a dictionary to hold the final data
-        var data = new Dictionary<string, object>
+        // Create a JObject to hold the final data
+        var data = new JObject
         {
-            [dateString] = new Dictionary<string, object>
-            {
-                ["Cash_in"] = new List<object>(),
-                ["Cash_out"] = new List<object>()
+            { dateString, new JObject
+                {
+                    { "Cash_in", new JArray() },
+                    { "Cash_out", new JArray() }
+                }
             }
         };
 
-        //populate Cash_in
-        ((List<object>)((Dictionary<string, object>)data[dateString])["Cash_in"]).Add(new Dictionary<string, object>
+        // Populate Cash_in
+        ((JArray)data[dateString]["Cash_in"]).Add(new JObject
         {
-            ["SellCigar"] = cigarCashInText.text
+            { "SellCigar", cigarCashInText.text }
         });
 
-        // Loop through each expense field and add the data to the dictionary
+        // Loop through each expense field and add the data to the JObject
         for (int i = 0; i < cigarCashInFields.Count - 1; i += 2)
         {
-            ((List<object>)((Dictionary<string, object>)data[dateString])["Cash_in"]).Add(new Dictionary<string, object>
+            ((JArray)data[dateString]["Cash_in"]).Add(new JObject
             {
-                [cigarCashInFields[i].text] = cigarCashInFields[i + 1].text
+                { cigarCashInFields[i].text, cigarCashInFields[i + 1].text }
             });
         }
 
-        //populate Cash_out
-        ((List<object>)((Dictionary<string, object>)data[dateString])["Cash_out"]).Add(new Dictionary<string, object>
+        // Populate Cash_out
+        ((JArray)data[dateString]["Cash_out"]).Add(new JObject
         {
-            ["BuyCigar"] = cigarCashOutFields[0].text
+            { "BuyCigar", cigarCashOutFields[0].text }
         });
 
-        // Loop through each expense field and add the data to the dictionary
+        // Loop through each expense field and add the data to the JObject
         for (int i = 1; i < cigarCashOutFields.Count - 1; i += 2)
         {
-            ((List<object>)((Dictionary<string, object>)data[dateString])["Cash_out"]).Add(new Dictionary<string, object>
+            ((JArray)data[dateString]["Cash_out"]).Add(new JObject
             {
-                [cigarCashOutFields[i].text] = cigarCashOutFields[i + 1].text
+                { cigarCashOutFields[i].text, cigarCashOutFields[i + 1].text }
             });
         }
 
         // Convert the data into a JSON string
-        string json = JsonConvert.SerializeObject(data);
+        string json = data.ToString();
 
         // Output the JSON string
         print(json);
-
-
-
     }
+
     void GenerateShantoJson()
     {
-        // Create a dictionary to hold the final data
-        var data = new Dictionary<string, object>
+        // Create a JObject to hold the final data
+        var data = new JObject
         {
-            [dateString] = new Dictionary<string, object>
-            {
-                ["Cash_in"] = new List<object>(),
-                ["Cash_out"] = new List<object>()
+            { dateString, new JObject
+                {
+                    { "Cash_in", new JArray() },
+                    { "Cash_out", new JArray() }
+                }
             }
         };
 
-        //populate Cash_in
-        ((List<object>)((Dictionary<string, object>)data[dateString])["Cash_in"]).Add(new Dictionary<string, object>
-        {
-            ["Shanto"] = S_D_expenseTexts[0].text,
-        });
-        ((List<object>)((Dictionary<string, object>)data[dateString])["Cash_in"]).Add(new Dictionary<string, object>
-        {
-            ["Dokan"] = S_D_expenseTexts[1].text
-        });
+        // Populate Cash_in
 
-        // Loop through each expense field and add the data to the dictionary
+        // Loop through each expense field and add the data to the JObject
         for (int i = 0; i < shantoCashInFields.Count - 1; i += 2)
         {
-            ((List<object>)((Dictionary<string, object>)data[dateString])["Cash_in"]).Add(new Dictionary<string, object>
+            ((JArray)data[dateString]["Cash_in"]).Add(new JObject
             {
-                [shantoCashInFields[i].text] = shantoCashInFields[i + 1].text
+                { shantoCashInFields[i].text, shantoCashInFields[i + 1].text }
             });
         }
 
-        //populate Cash_out
+        // Populate Cash_out
 
-        // Loop through each expense field and add the data to the dictionary
+        // Loop through each expense field and add the data to the JObject
         for (int i = 0; i < shantoCashOutFields.Count - 1; i += 2)
         {
-            ((List<object>)((Dictionary<string, object>)data[dateString])["Cash_out"]).Add(new Dictionary<string, object>
+            ((JArray)data[dateString]["Cash_out"]).Add(new JObject
             {
-                [shantoCashOutFields[i].text] = shantoCashOutFields[i + 1].text
+                { shantoCashOutFields[i].text, shantoCashOutFields[i + 1].text }
             });
         }
 
         // Convert the data into a JSON string
-        string json = JsonConvert.SerializeObject(data);
+        string json = data.ToString();
 
         // Output the JSON string
         print(json);
+    }
+
+    void ShowDailySellSummary(string jsonData)
+    {
+        //get total sell data:
+        JObject dokanSellData = JObject.Parse(PlayerPrefs.GetString("DokanSell", "{}"));
+        int sellAmountExceptHotel = 0;
+        int sellToHotel = 0;
+        foreach (var item in dokanSellData[dateString])
+        {
+            if (int.TryParse((string)item["price"], out int tmpPrice))
+            {
+                if ((string)item["sellTo"] == "Hotel")
+                {
+                    sellToHotel += tmpPrice;
+                }
+                else
+                {
+                    sellAmountExceptHotel += tmpPrice;
+                } 
+            }
+        }
+
+        JObject data = JObject.Parse(jsonData);
+        JObject dateData = (JObject)data[dateString];
+        JArray expenses = (JArray)dateData["Expense"];
+        JArray purchases = (JArray)dateData["Purchase"];
+        string baki = (string)dateData["Baki"];
+
+        string displayText = "Expense:\n";
+        int expenseAmount = 0;
+        foreach (JObject expense in expenses)
+        {
+            foreach (KeyValuePair<string, JToken> entry in expense)
+            {
+                JObject expenseData = (JObject)entry.Value;
+                string fromCash = (string)expenseData["FromCash"];
+                if (!string.IsNullOrEmpty(fromCash))
+                {
+                    displayText += entry.Key + ":" + fromCash + "\n";
+                    expenseAmount += int.Parse(fromCash);
+                }
+            }
+        }
+
+        displayText += "Purchase:\n";
+        int purchaseAmount = 0;
+        foreach (JObject purchase in purchases)
+        {
+            foreach (KeyValuePair<string, JToken> entry in purchase)
+            {
+                JObject purchaseData = (JObject)entry.Value;
+                string fromCash = (string)purchaseData["FromCash"];
+                if (!string.IsNullOrEmpty(fromCash))
+                {
+                    displayText += entry.Key + ":" + fromCash + "\n";
+                    purchaseAmount += int.Parse(fromCash);
+                }
+            }
+        }
+
+        int bakiAmount = 0;
+        if (!string.IsNullOrEmpty(baki))
+        {
+            displayText += "Baki:" + baki + "\n";
+            bakiAmount += int.Parse(baki);
+        }
+
+        int remainingCash = (sellToHotel + sellAmountExceptHotel + bakiAmount) - (expenseAmount + purchaseAmount);
+        displayText += "Cash:" + remainingCash + "\n";
+
+        // Add remaining cash to JSON object
+        dateData.Add("RemainingCash", remainingCash);
+        // Add remaining cash to JSON object
+        dateData.Add("Date", dateString);
+        dateData.Add("SellToHotel", sellToHotel);
+        // Convert dateData to JSON string
+        string dateDataJsonString = dateData.ToString();
+
+        displayText += "-------------------------\n";
+        displayText += "Sum = " + (expenseAmount+purchaseAmount+ bakiAmount + remainingCash) + $"    Hotel({sellToHotel})";
+        displayText += sellToHotel + sellAmountExceptHotel;
+        print(displayText);
+        print(dateDataJsonString);
+        //textDisplay.text = displayText;
+
+        //StartCoroutine(test.PostRequest(dateDataJsonString));
+
     }
 }
