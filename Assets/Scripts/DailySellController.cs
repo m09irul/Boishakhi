@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using System;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Linq;
 
 public class DailySellController : MonoBehaviour
 {
@@ -27,10 +28,23 @@ public class DailySellController : MonoBehaviour
     string dateString, sellToInfo;
     public Button sellToButton;
 
+    string jsonPrefId = "";
+    string existingJson = "";
+    string id = "";
+    string price = "";
+    string cash_in = "";
+    string cash_out = "";
+
     private void Start()
     {
         // Format the date as a string
-        dateString = DateTime.Today.ToString("yyyy-MM-dd");
+        dateString = MainController.instance.GetToday();
+
+        PlayerPrefs.SetString("DokanSell", UpdateJsonForOldDates(PlayerPrefs.GetString("DokanSell", "{}")));
+
+        CleanCalcAndFields();
+        SubmitSellData(0);
+        SubmitSellData(1);
     }
     private void Update()
     {
@@ -125,12 +139,6 @@ public class DailySellController : MonoBehaviour
     /// <param name="index"></param>
     public void SubmitSellData(int index)
     {
-        string jsonPrefId = "";
-        string existingJson = "";
-        string id = "";
-        string price = "";
-        string cash_in = "";
-        string cash_out = "";
 
         if (index == 0)
         {
@@ -161,7 +169,7 @@ public class DailySellController : MonoBehaviour
         if (jsonData[dateString] != null)
         {
             // Append new data to existing date array
-            dateArray = (JArray)jsonData[dateString];
+            dateArray = (JArray)jsonData[dateString]["Data"];
         }
         else
         {
@@ -169,7 +177,8 @@ public class DailySellController : MonoBehaviour
 
             // Create new date array and append to JSON data
             dateArray = new JArray();
-
+            jsonData[dateString] = new JObject();
+            jsonData[dateString]["Data"] = dateArray;
         }
 
         JObject newData = new JObject(
@@ -180,36 +189,91 @@ public class DailySellController : MonoBehaviour
                 new JProperty("cash_out", cash_out),
                 new JProperty("time", time)
             );
+
         dateArray.Add(newData);
-        jsonData[dateString] = dateArray;
 
         // Increment ID in PlayerPrefs
         PlayerPrefs.SetInt(id, PlayerPrefs.GetInt(id, 1) + 1);
 
         //get total sell price
-        int sum = 0;
-        foreach (var item in jsonData[dateString])
-        {
-            if (int.TryParse((string)item["price"], out int tmpPrice))
-            {
-                sum += tmpPrice;
-            }
-        }
+        jsonData[dateString]["Total Sell"] = (Convert.ToDouble(jsonData[dateString]["Total Sell"]) + Convert.ToDouble(price)).ToString();
+
 
         // Store updated JSON data in PlayerPrefs
         string json = jsonData.ToString();
-        Debug.Log(json);
 
         PlayerPrefs.SetString(jsonPrefId, json);
 
-        UpdateTotalSellUI(sum.ToString(), index);
-        CleanInputFields();
+        UpdateTotalSellUI(jsonData[dateString]["Total Sell"].ToString(), index);
 
+        StartCoroutine(MainController.instance.PostRequest(PlayerPrefs.GetString(jsonPrefId, "{}"), index+1, UpdateJsonOnEachSell));
+
+        CleanCalcAndFields(index);
+
+    }
+    string UpdateJsonForOldDates(string jsonString)
+    {
+        // Parse the JSON string into a JObject
+        JObject jsonData = JObject.Parse(jsonString);
+
+        // Get the current date
+        DateTime currentDate = DateTime.Now;
+
+        // Iterate over the keys of the JObject
+        foreach (var key in jsonData.Properties().ToList())
+        {
+            // Parse the date from the key
+            DateTime date = DateTime.Parse(key.Name);
+
+            // Calculate the difference between the current date and the date in the JSON object
+            TimeSpan difference = currentDate - date;
+
+            // If the difference is greater than 3 days, remove the key-value pair from the JObject
+            if (difference.TotalDays > 3)
+            {
+                jsonData.Remove(key.Name);
+            }
+        }
+
+        // Convert the modified JObject back to a JSON string
+        string updatedJsonString = jsonData.ToString();
+
+        return updatedJsonString;
+
+    }
+    void UpdateJsonOnEachSell(string respose)
+    {
+        JObject jObj1 = JObject.Parse(respose);
+        JObject jObj2 = JObject.Parse(PlayerPrefs.GetString(jsonPrefId, "{}"));
+
+        var data1 = jObj1[dateString]["Data"].Children().Select(d => d.ToString()).ToHashSet();
+        var data2 = jObj2[dateString]["Data"].Children().Select(d => d.ToString());
+
+        var newData = new JArray(data2.Except(data1).Select(d => JObject.Parse(d)));
+
+        jObj2[dateString]["Data"] = newData;
+
+        PlayerPrefs.SetString(jsonPrefId, jObj2.ToString());
     }
     void UpdateTotalSellUI(string data, int index)
     {
-        totalSellText[index].text = data;  
+        totalSellText[index].text = data;
     }
+
+    private void CleanCalcAndFields(int index = -1)
+    {
+        int start = index == -1 ? 0 : (index + 1) * index;
+        int end = index == -1 ? fields.Length - 1 : (index + 1) + index;
+
+        for (int i = start; i <= end; i++)
+        {
+            fields[i].text = "0";
+        }
+
+
+        calculator.OnPressedClearAll();
+    }
+
     public void OnSellListClicked(int index)
     {
         //clean the container
@@ -217,9 +281,6 @@ public class DailySellController : MonoBehaviour
         {
             sellDataScrollbarViewport.GetChild(i).gameObject.SetActive(false);
         }
-
-        string jsonPrefId = "";
-        string existingJson = "";
 
         if (index == 0)
         {
@@ -242,7 +303,7 @@ public class DailySellController : MonoBehaviour
         // Check if current date exists in JSON data
         if (jsonData[dateString] != null)
         {
-            JArray myArray = (JArray)jsonData[dateString];
+            JArray myArray = (JArray)jsonData[dateString]["Data"];
 
             GameObject tmp;
 

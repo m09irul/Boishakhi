@@ -1,19 +1,34 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class Test : MonoBehaviour
+public class MainController : MonoBehaviour
 {
+    public static MainController instance = null;
+    private void Awake()
+    {
+        if (instance == null)
+            instance = this;
+        else
+            Destroy(gameObject);
+
+    }
     // The URL of the deployed web app
     private string url = "https://script.google.com/macros/s/AKfycbxWKVj0LQ6Hsht8czyg_QwUWriguiCbZ5CM0780LKZL6VbQDUN5qfL2f2KXtuWxMyrV5g/exec";
 
-    // Start is called before the first frame update
-    void Start()
+    public string GetToday()
     {
+        DateTime now = DateTime.Now;
 
-        // Send the data as a POST request to the web app's URL
-       // StartCoroutine(PostRequest(url, PlayerPrefs.GetString("MyObject", "{}")));
-        
+        if (now.Hour < 3)
+        {
+            return now.AddDays(-1).Date.ToString("yyyy-MM-dd");
+        }
+        else
+        {
+            return now.Date.ToString("yyyy-MM-dd");
+        }
     }
     IEnumerator GetRequest(string url)
     {
@@ -33,11 +48,12 @@ public class Test : MonoBehaviour
             Debug.Log(request.downloadHandler.text);
         }
     }
-    public IEnumerator PostRequest(string json)
+    public IEnumerator PostRequest(string json, int intValue, Action<string> callBack)
     {
         // Create a new UnityWebRequest and set the method to POST
         var request = new UnityWebRequest(url, "POST");
-        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        string requestBody = "{\"jsonData\":" + json + ",\"intValue\":" + intValue + "}";
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(requestBody);
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
@@ -52,6 +68,7 @@ public class Test : MonoBehaviour
         else
         {
             Debug.Log(request.downloadHandler.text);
+            callBack(request.downloadHandler.text);
         }
 
         //StartCoroutine(GetRequest(url));

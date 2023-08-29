@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 
 public class ManagementController : MonoBehaviour
 {
-    public Test test;
+    public MainController test;
 
     public TextMeshProUGUI[] S_D_expenseTexts;
     public TextMeshProUGUI cigarCashInText;
@@ -53,7 +53,8 @@ public class ManagementController : MonoBehaviour
     string dateString;
     private void Start()
     {
-        dateString = DateTime.Today.ToString("yyyy-MM-dd");
+        // Format the date as a string
+        dateString = MainController.instance.GetToday();
 
         expenseAddButton.onClick.AddListener(()=>OnAddMoreFields(expensePurchaseContainerPrefab, expenseContainerParent, expenseFields));
         purchaseAddButton.onClick.AddListener(()=>OnAddMoreFields(expensePurchaseContainerPrefab, purchaseContainerParent, purchaseFields));
@@ -70,7 +71,24 @@ public class ManagementController : MonoBehaviour
         allInputFields.AddRange(cigarCashOutFields);
         allInputFields.AddRange(shantoCashInFields);
         allInputFields.AddRange(shantoCashOutFields);
+
+        UpdateCigarSellUI(GetTotalCigarSell());
     }
+
+    string GetTotalCigarSell()
+    {
+        //get total sell data:
+        JObject cigarSellData = JObject.Parse(PlayerPrefs.GetString("CigarSell", "{}"));
+        print(cigarSellData);
+        return cigarSellData[dateString]["Total Sell"] == null ? "0" : (string)cigarSellData[dateString]["Total Sell"];
+
+    }
+
+    void UpdateCigarSellUI(string val)
+    {
+        cigarCashInText.text = val;
+    }
+
     private void Update()
     {
         bool isAnyFieldFocused = false;
@@ -147,15 +165,18 @@ public class ManagementController : MonoBehaviour
         // Loop through each expense field and add the data to the JObject
         for (int i = 2; i < expenseFields.Count - 2; i += 3)
         {
-            ((JArray)data[dateString]["Expense"]).Add(new JObject
+            if (!string.IsNullOrEmpty(expenseFields[i].text) || !string.IsNullOrEmpty(expenseFields[i + 1].text) || !string.IsNullOrEmpty(expenseFields[i + 2].text))
             {
-                { expenseFields[i].text, new JObject
-                    {
-                        { "FromCash", expenseFields[i + 1].text },
-                        { "FromFund", expenseFields[i + 2].text }
+                ((JArray)data[dateString]["Expense"]).Add(new JObject
+                {
+                    { expenseFields[i].text, new JObject
+                        {
+                            { "FromCash", expenseFields[i + 1].text },
+                            { "FromFund", expenseFields[i + 2].text }
+                        }
                     }
-                }
-            });
+                });
+            }
         }
 
         // Populate purchase
@@ -163,15 +184,18 @@ public class ManagementController : MonoBehaviour
         // Loop through each purchase field and add the data to the JObject
         for (int i = 0; i < purchaseFields.Count - 2; i += 3)
         {
-            ((JArray)data[dateString]["Purchase"]).Add(new JObject
+            if (!string.IsNullOrEmpty(purchaseFields[i].text) || !string.IsNullOrEmpty(purchaseFields[i + 1].text) || !string.IsNullOrEmpty(purchaseFields[i + 2].text))
             {
-                { purchaseFields[i].text, new JObject
-                    {
-                        { "FromCash", purchaseFields[i + 1].text },
-                        { "FromFund", purchaseFields[i + 2].text }
+                ((JArray)data[dateString]["Purchase"]).Add(new JObject
+                {
+                    { purchaseFields[i].text, new JObject
+                        {
+                            { "FromCash", purchaseFields[i + 1].text },
+                            { "FromFund", purchaseFields[i + 2].text }
+                        }
                     }
-                }
-            });
+                });
+            }
         }
 
         // Convert the data into a JSON string
@@ -205,10 +229,13 @@ public class ManagementController : MonoBehaviour
         // Loop through each expense field and add the data to the JObject
         for (int i = 0; i < cigarCashInFields.Count - 1; i += 2)
         {
-            ((JArray)data[dateString]["Cash_in"]).Add(new JObject
+            if (!string.IsNullOrEmpty(cigarCashInFields[i].text) || !string.IsNullOrEmpty(cigarCashInFields[i + 1].text))
             {
-                { cigarCashInFields[i].text, cigarCashInFields[i + 1].text }
-            });
+                ((JArray)data[dateString]["Cash_in"]).Add(new JObject
+                {
+                    { cigarCashInFields[i].text, cigarCashInFields[i + 1].text }
+                });
+            }
         }
 
         // Populate Cash_out
@@ -220,10 +247,13 @@ public class ManagementController : MonoBehaviour
         // Loop through each expense field and add the data to the JObject
         for (int i = 1; i < cigarCashOutFields.Count - 1; i += 2)
         {
-            ((JArray)data[dateString]["Cash_out"]).Add(new JObject
+            if (!string.IsNullOrEmpty(cigarCashOutFields[i].text) || !string.IsNullOrEmpty(cigarCashOutFields[i + 1].text))
             {
-                { cigarCashOutFields[i].text, cigarCashOutFields[i + 1].text }
-            });
+                ((JArray)data[dateString]["Cash_out"]).Add(new JObject
+                {
+                    { cigarCashOutFields[i].text, cigarCashOutFields[i + 1].text }
+                });
+            }
         }
 
         // Convert the data into a JSON string
@@ -251,10 +281,15 @@ public class ManagementController : MonoBehaviour
         // Loop through each expense field and add the data to the JObject
         for (int i = 0; i < shantoCashInFields.Count - 1; i += 2)
         {
-            ((JArray)data[dateString]["Cash_in"]).Add(new JObject
+            if (!string.IsNullOrEmpty(shantoCashInFields[i].text) || !string.IsNullOrEmpty(shantoCashInFields[i + 1].text))
             {
-                { shantoCashInFields[i].text, shantoCashInFields[i + 1].text }
-            });
+                ((JArray)data[dateString]["Cash_in"]).Add(new JObject
+                {
+                    { shantoCashInFields[i].text, shantoCashInFields[i + 1].text }
+                });
+            }
+
+            
         }
 
         // Populate Cash_out
@@ -262,10 +297,13 @@ public class ManagementController : MonoBehaviour
         // Loop through each expense field and add the data to the JObject
         for (int i = 0; i < shantoCashOutFields.Count - 1; i += 2)
         {
-            ((JArray)data[dateString]["Cash_out"]).Add(new JObject
+            if (!string.IsNullOrEmpty(shantoCashOutFields[i].text) || !string.IsNullOrEmpty(shantoCashOutFields[i + 1].text))
             {
-                { shantoCashOutFields[i].text, shantoCashOutFields[i + 1].text }
-            });
+                ((JArray)data[dateString]["Cash_out"]).Add(new JObject
+                {
+                    { shantoCashOutFields[i].text, shantoCashOutFields[i + 1].text }
+                });
+            }
         }
 
         // Convert the data into a JSON string
@@ -279,9 +317,10 @@ public class ManagementController : MonoBehaviour
     {
         //get total sell data:
         JObject dokanSellData = JObject.Parse(PlayerPrefs.GetString("DokanSell", "{}"));
+     
         int sellAmountExceptHotel = 0;
         int sellToHotel = 0;
-        foreach (var item in dokanSellData[dateString])
+        foreach (var item in dokanSellData[dateString]["Data"])
         {
             if (int.TryParse((string)item["price"], out int tmpPrice))
             {
@@ -292,7 +331,7 @@ public class ManagementController : MonoBehaviour
                 else
                 {
                     sellAmountExceptHotel += tmpPrice;
-                } 
+                }
             }
         }
 
@@ -353,10 +392,11 @@ public class ManagementController : MonoBehaviour
         string dateDataJsonString = dateData.ToString();
 
         displayText += "-------------------------\n";
-        displayText += "Sum = " + (expenseAmount+purchaseAmount+ bakiAmount + remainingCash) + $"    Hotel({sellToHotel})";
+        displayText += "Sum = " + (expenseAmount + purchaseAmount + bakiAmount + remainingCash) + $"    Hotel({sellToHotel})";
         displayText += sellToHotel + sellAmountExceptHotel;
         print(displayText);
         print(dateDataJsonString);
+        Debug.LogError("Add an Erorr popup if accessing without any sell");
         //textDisplay.text = displayText;
 
         //StartCoroutine(test.PostRequest(dateDataJsonString));
