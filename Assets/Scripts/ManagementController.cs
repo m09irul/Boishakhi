@@ -8,11 +8,10 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 using Newtonsoft.Json;
+using System.Text;
 
 public class ManagementController : MonoBehaviour
 {
-    public MainController test;
-
     public TextMeshProUGUI[] S_D_expenseTexts;
     public TextMeshProUGUI cigarCashInText;
 
@@ -51,7 +50,7 @@ public class ManagementController : MonoBehaviour
 
     public Calculator calculator;
     string dateString;
-    private void Start()
+    public void OnStart()
     {
         // Format the date as a string
         dateString = MainController.instance.GetToday();
@@ -72,16 +71,81 @@ public class ManagementController : MonoBehaviour
         allInputFields.AddRange(shantoCashInFields);
         allInputFields.AddRange(shantoCashOutFields);
 
+        UpdateTotalCashUI();
+        
         UpdateCigarSellUI(GetTotalCigarSell());
     }
 
     string GetTotalCigarSell()
     {
         //get total sell data:
-        JObject cigarSellData = JObject.Parse(PlayerPrefs.GetString("CigarSell", "{}"));
+        JObject cigarSellData = JObject.Parse(PlayerPrefs.GetString(StringManager.CIGAR_SELL_MAIN, "{}"));
         print(cigarSellData);
         return cigarSellData[dateString]["Total Sell"] == null ? "0" : (string)cigarSellData[dateString]["Total Sell"];
 
+    }
+    public void UpdateTotalCashUI()
+    {
+        dokanCashTillToday.text = PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0");
+        cigarCashTillToday.text = PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH, "0");
+        shantoCashTillToday.text = PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH, "0");
+
+        StartCoroutine(MainController.instance.GetRequest($"myInt={4}&myDate={MainController.instance.GetToday()}", UpdateTotalCash));
+    }
+    void UpdateTotalCash(string respose)
+    {
+        // Parse the JSON data
+        JObject data = JObject.Parse(respose);
+
+        foreach (JProperty property in data.Properties())
+        {
+            print(property.Name + ":");
+            foreach (JToken element in property.Value)
+            {
+                print(element);
+            }
+        }
+    }
+    void UpdateDokanCash(string respose)
+    {
+        // Parse the JSON data
+        JObject jo = JObject.Parse(respose);
+
+        // Access the 'Purchase' property
+        JArray purchase = (JArray)jo["Purchase"];
+
+        // Create a StringBuilder to store the formatted string
+        StringBuilder sb = new StringBuilder();
+
+        // Append the header to the StringBuilder
+        sb.AppendLine("Purchase:");
+        sb.AppendLine("Date\tItem\tValue");
+
+        // Iterate over the elements of the 'Purchase' array
+        foreach (JArray element in purchase)
+        {
+            // Access the values of the element
+            string date = (string)element[0];
+            string item = (string)element[1];
+            string value = (string)element[2];
+
+            // Extract only the date value from the date string
+            date = date.Substring(0, 10);
+            // Split the date into its components
+            string[] dateParts = date.Split('/');
+
+            // Reformat the date in day-month-year format
+            date = $"{dateParts[2]}-{dateParts[1]}-{dateParts[0]}";
+
+            // Append the values to the StringBuilder
+            sb.AppendLine($"{date}\t{item}\t{value}");
+        }
+
+        // Get the formatted string from the StringBuilder
+        string result = sb.ToString();
+
+        // Print the result
+        print(result);
     }
 
     void UpdateCigarSellUI(string val)

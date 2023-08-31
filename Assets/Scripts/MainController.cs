@@ -1,5 +1,7 @@
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -14,9 +16,17 @@ public class MainController : MonoBehaviour
             Destroy(gameObject);
 
     }
-    // The URL of the deployed web app
-    private string url = "https://script.google.com/macros/s/AKfycbxWKVj0LQ6Hsht8czyg_QwUWriguiCbZ5CM0780LKZL6VbQDUN5qfL2f2KXtuWxMyrV5g/exec";
+    public ManagementController managementController;
+    public DailySellController dailySellController;
 
+    // The URL of the deployed web app
+    private string url = "https://script.google.com/macros/s/AKfycbylK6ALrw5nvNaIVDHjtK6nHUQsbemGbQtr62nwpxel8781LW9UX2_TdIpN8a-mk-I/exec";
+
+    private void Start()
+    {
+        dailySellController.OnStart();
+        managementController.OnStart();
+    }
     public string GetToday()
     {
         DateTime now = DateTime.Now;
@@ -30,8 +40,11 @@ public class MainController : MonoBehaviour
             return now.Date.ToString("yyyy-MM-dd");
         }
     }
-    IEnumerator GetRequest(string url)
+    public IEnumerator GetRequest(string param, Action<string> callBack)
     {
+        // Append the parameter to the URL
+        url = url + "?" + param;
+
         // Create a new UnityWebRequest and set the method to GET
         var request = new UnityWebRequest(url, "GET");
         request.downloadHandler = new DownloadHandlerBuffer();
@@ -46,6 +59,8 @@ public class MainController : MonoBehaviour
         else
         {
             Debug.Log(request.downloadHandler.text);
+
+            callBack(request.downloadHandler.text);  
         }
     }
     public IEnumerator PostRequest(string json, int intValue, Action<string> callBack)
