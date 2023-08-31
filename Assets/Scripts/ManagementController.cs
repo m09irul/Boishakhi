@@ -18,6 +18,11 @@ public class ManagementController : MonoBehaviour
     public TextMeshProUGUI dokanCashTillToday;
     public TextMeshProUGUI cigarCashTillToday;
     public TextMeshProUGUI shantoCashTillToday;
+    [Space]
+    public TextMeshProUGUI dailySellSummaryText;
+    public TextMeshProUGUI dailyDokanSummaryText;
+    public TextMeshProUGUI dailyCigarSummaryText;
+    public TextMeshProUGUI dailyShantoSummaryText;
 
     public GameObject expensePurchaseContainerPrefab;
     public GameObject cigarShantoContainerPrefab;
@@ -97,14 +102,29 @@ public class ManagementController : MonoBehaviour
         // Parse the JSON data
         JObject data = JObject.Parse(respose);
 
-        foreach (JProperty property in data.Properties())
-        {
-            print(property.Name + ":");
-            foreach (JToken element in property.Value)
-            {
-                print(element);
-            }
-        }
+        JProperty property = data.Properties().First();
+
+        JArray elements = (JArray)property.Value;
+
+        // Define an array of keys to update
+        string[] keysToUpdate = new string[] {
+        StringManager.DOKAN_TOTAL_CASH,
+        StringManager.SHANTO_TOTAL_CASH,
+        StringManager.SHANTO_HOTEL_TOTAL_CASH,
+        StringManager.CIGAR_TOTAL_CASH,
+        StringManager.OVREALL_TOTAL_CASH
+        };
+
+        PlayerPrefs.SetString(StringManager.HOTEL_TOTAL_CASH, elements[0].ToString());
+        PlayerPrefs.SetString(StringManager.DOKAN_TOTAL_CASH, elements[1].ToString());
+        PlayerPrefs.SetString(StringManager.SHANTO_TOTAL_CASH, elements[2].ToString());
+        PlayerPrefs.SetString(StringManager.SHANTO_HOTEL_TOTAL_CASH, elements[3].ToString());
+        PlayerPrefs.SetString(StringManager.CIGAR_TOTAL_CASH, elements[5].ToString());
+        PlayerPrefs.SetString(StringManager.OVREALL_TOTAL_CASH, elements[7].ToString());
+
+        dokanCashTillToday.text = PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0");
+        cigarCashTillToday.text = PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH, "0");
+        shantoCashTillToday.text = PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH, "0");
     }
     void UpdateDokanCash(string respose)
     {
@@ -185,9 +205,6 @@ public class ManagementController : MonoBehaviour
     }
     public void GenerateJson()
     {
-        /*string myDokanJson = PlayerPrefs.GetString("MyDokan", "{}");
-        string myCigarJson = PlayerPrefs.GetString("MyCigar", "{}");
-        string myShantoJson = PlayerPrefs.GetString("MyShanto", "{}");*/
         GenerateDokanJson();
         GenerateCigarJson();
         GenerateShantoJson();
@@ -380,7 +397,7 @@ public class ManagementController : MonoBehaviour
     void ShowDailySellSummary(string jsonData)
     {
         //get total sell data:
-        JObject dokanSellData = JObject.Parse(PlayerPrefs.GetString("DokanSell", "{}"));
+        JObject dokanSellData = JObject.Parse(PlayerPrefs.GetString(StringManager.DOKAN_SELL_MAIN, "{}"));
      
         int sellAmountExceptHotel = 0;
         int sellToHotel = 0;
@@ -405,7 +422,8 @@ public class ManagementController : MonoBehaviour
         JArray purchases = (JArray)dateData["Purchase"];
         string baki = (string)dateData["Baki"];
 
-        string displayText = "Expense:\n";
+        string displayText = $"{dateString}:\n";
+        displayText += "  Expense:\n";
         int expenseAmount = 0;
         foreach (JObject expense in expenses)
         {
@@ -415,13 +433,13 @@ public class ManagementController : MonoBehaviour
                 string fromCash = (string)expenseData["FromCash"];
                 if (!string.IsNullOrEmpty(fromCash))
                 {
-                    displayText += entry.Key + ":" + fromCash + "\n";
+                    displayText += "    " + entry.Key + ":" + fromCash + "\n";
                     expenseAmount += int.Parse(fromCash);
                 }
             }
         }
 
-        displayText += "Purchase:\n";
+        displayText += "  Purchase:\n";
         int purchaseAmount = 0;
         foreach (JObject purchase in purchases)
         {
@@ -431,7 +449,7 @@ public class ManagementController : MonoBehaviour
                 string fromCash = (string)purchaseData["FromCash"];
                 if (!string.IsNullOrEmpty(fromCash))
                 {
-                    displayText += entry.Key + ":" + fromCash + "\n";
+                    displayText += "    " + entry.Key + ":" + fromCash + "\n";
                     purchaseAmount += int.Parse(fromCash);
                 }
             }
@@ -440,15 +458,15 @@ public class ManagementController : MonoBehaviour
         int bakiAmount = 0;
         if (!string.IsNullOrEmpty(baki))
         {
-            displayText += "Baki:" + baki + "\n";
+            displayText += "  Baki:" + baki + "\n";
             bakiAmount += int.Parse(baki);
         }
 
         int remainingCash = (sellToHotel + sellAmountExceptHotel + bakiAmount) - (expenseAmount + purchaseAmount);
-        displayText += "Cash:" + remainingCash + "\n";
+        displayText += "<b><i>"+"  Cash:" + remainingCash + " </b></i > " + "\n";
 
-        // Add remaining cash to JSON object
-        dateData.Add("RemainingCash", remainingCash);
+             // Add remaining cash to JSON object
+             dateData.Add("RemainingCash", remainingCash);
         // Add remaining cash to JSON object
         dateData.Add("Date", dateString);
         dateData.Add("SellToHotel", sellToHotel);
@@ -456,14 +474,10 @@ public class ManagementController : MonoBehaviour
         string dateDataJsonString = dateData.ToString();
 
         displayText += "-------------------------\n";
-        displayText += "Sum = " + (expenseAmount + purchaseAmount + bakiAmount + remainingCash) + $"    Hotel({sellToHotel})";
-        displayText += sellToHotel + sellAmountExceptHotel;
-        print(displayText);
-        print(dateDataJsonString);
-        Debug.LogError("Add an Erorr popup if accessing without any sell");
-        //textDisplay.text = displayText;
+        displayText += "SELL = " + (expenseAmount + purchaseAmount + remainingCash) + $"    Hotel({sellToHotel})";
 
-        //StartCoroutine(test.PostRequest(dateDataJsonString));
+        Debug.LogError("Add an Erorr popup if accessing without any sell");
+        dailySellSummaryText.text = displayText;
 
     }
 }
