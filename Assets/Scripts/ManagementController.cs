@@ -55,11 +55,18 @@ public class ManagementController : MonoBehaviour
 
     public Calculator calculator;
     string dateString;
+
+    int newTmpDokanAmount;
+    int newTmpCigarAmount;
+    int newTmpShantoAmount;
+
+    string dokanJsonToSubmit;
+    string cigarJsonToSubmit;
+    string shantoJsonToSubmit;
+
+    public GameObject successPanel, errorPanel, processingPanel;
     public void OnStart()
     {
-        // Format the date as a string
-        dateString = MainController.instance.GetToday();
-
         expenseAddButton.onClick.AddListener(()=>OnAddMoreFields(expensePurchaseContainerPrefab, expenseContainerParent, expenseFields));
         purchaseAddButton.onClick.AddListener(()=>OnAddMoreFields(expensePurchaseContainerPrefab, purchaseContainerParent, purchaseFields));
 
@@ -76,11 +83,17 @@ public class ManagementController : MonoBehaviour
         allInputFields.AddRange(shantoCashInFields);
         allInputFields.AddRange(shantoCashOutFields);
 
+        
+    }
+    public void OnEnable()
+    {
+        // Format the date as a string
+        dateString = MainController.instance.GetToday();
+        
         UpdateTotalCashUI();
         
         UpdateCigarSellUI(GetTotalCigarSell());
     }
-
     string GetTotalCigarSell()
     {
         //get total sell data:
@@ -282,9 +295,6 @@ public class ManagementController : MonoBehaviour
         // Convert the data into a JSON string
         string json = data.ToString();
 
-        // Output the JSON string
-        print(json);
-
         ShowDailySellSummary(json);
     }
 
@@ -304,7 +314,7 @@ public class ManagementController : MonoBehaviour
         // Populate Cash_in
         ((JArray)data[dateString]["Cash_in"]).Add(new JObject
         {
-            { "SellCigar", cigarCashInText.text }
+            { "Sell", cigarCashInText.text }
         });
 
         // Loop through each expense field and add the data to the JObject
@@ -322,7 +332,7 @@ public class ManagementController : MonoBehaviour
         // Populate Cash_out
         ((JArray)data[dateString]["Cash_out"]).Add(new JObject
         {
-            { "BuyCigar", cigarCashOutFields[0].text }
+            { "Buy", cigarCashOutFields[0].text }
         });
 
         // Loop through each expense field and add the data to the JObject
@@ -338,10 +348,10 @@ public class ManagementController : MonoBehaviour
         }
 
         // Convert the data into a JSON string
-        string json = data.ToString();
+        cigarJsonToSubmit = data.ToString();
 
         // Output the JSON string
-        print(json);
+        ShowDailyCigarSummary(cigarJsonToSubmit);
     }
 
     void GenerateShantoJson()
@@ -388,10 +398,10 @@ public class ManagementController : MonoBehaviour
         }
 
         // Convert the data into a JSON string
-        string json = data.ToString();
+        shantoJsonToSubmit = data.ToString();
 
         // Output the JSON string
-        print(json);
+        ShowDailyShantoSummary(shantoJsonToSubmit);
     }
 
     void ShowDailySellSummary(string jsonData)
@@ -422,35 +432,59 @@ public class ManagementController : MonoBehaviour
         JArray purchases = (JArray)dateData["Purchase"];
         string baki = (string)dateData["Baki"];
 
-        string displayText = $"{dateString}:\n";
-        displayText += "  Expense:\n";
-        int expenseAmount = 0;
+        string displayTextForDailySell = $"{dateString}:\n";
+        string displayTextForDokanSell = $"{dateString}:    old:  {PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0")}\n";
+
+        displayTextForDailySell += "  Expense:\n";
+        displayTextForDokanSell += "  Expense:\n";
+
+        int expenseAmountFromCash = 0;
+        int expenseAmountFromFund = 0;
         foreach (JObject expense in expenses)
         {
             foreach (KeyValuePair<string, JToken> entry in expense)
             {
                 JObject expenseData = (JObject)entry.Value;
+
                 string fromCash = (string)expenseData["FromCash"];
-                if (!string.IsNullOrEmpty(fromCash))
+                string fromFund = (string)expenseData["FromFund"];
+
+                if (!string.IsNullOrEmpty(fromCash) && !fromCash.Equals("0"))
                 {
-                    displayText += "    " + entry.Key + ":" + fromCash + "\n";
-                    expenseAmount += int.Parse(fromCash);
+                    displayTextForDailySell += "    " + entry.Key + ":" + fromCash + "\n";
+                    expenseAmountFromCash += int.Parse(fromCash);
+                }
+                if (!string.IsNullOrEmpty(fromFund) && !fromFund.Equals("0"))
+                {
+                    displayTextForDokanSell += "    " + entry.Key + ": (-)" + fromFund + "\n";
+                    expenseAmountFromFund += int.Parse(fromFund);
                 }
             }
         }
 
-        displayText += "  Purchase:\n";
-        int purchaseAmount = 0;
+        displayTextForDailySell += "  Purchase:\n";
+        displayTextForDokanSell += "  Purchase:\n";
+
+        int purchaseAmountFromCash = 0;
+        int purchaseAmountFromFund = 0;
         foreach (JObject purchase in purchases)
         {
             foreach (KeyValuePair<string, JToken> entry in purchase)
             {
                 JObject purchaseData = (JObject)entry.Value;
+
                 string fromCash = (string)purchaseData["FromCash"];
-                if (!string.IsNullOrEmpty(fromCash))
+                string fromFund = (string)purchaseData["FromFund"];
+
+                if (!string.IsNullOrEmpty(fromCash) && !fromCash.Equals("0"))
                 {
-                    displayText += "    " + entry.Key + ":" + fromCash + "\n";
-                    purchaseAmount += int.Parse(fromCash);
+                    displayTextForDailySell += "    " + entry.Key + ":" + fromCash + "\n";
+                    purchaseAmountFromCash += int.Parse(fromCash);
+                }
+                if (!string.IsNullOrEmpty(fromFund) && !fromFund.Equals("0"))
+                {
+                    displayTextForDokanSell += "    " + entry.Key + ": (-)" + fromFund + "\n";
+                    purchaseAmountFromFund += int.Parse(fromFund);
                 }
             }
         }
@@ -458,26 +492,167 @@ public class ManagementController : MonoBehaviour
         int bakiAmount = 0;
         if (!string.IsNullOrEmpty(baki))
         {
-            displayText += "  Baki:" + baki + "\n";
+            displayTextForDailySell += "  Baki:" + baki + "\n";
             bakiAmount += int.Parse(baki);
         }
 
-        int remainingCash = (sellToHotel + sellAmountExceptHotel + bakiAmount) - (expenseAmount + purchaseAmount);
-        displayText += "<b><i>"+"  Cash:" + remainingCash + " </b></i > " + "\n";
+        int remainingCash = (sellToHotel + sellAmountExceptHotel + bakiAmount) - (expenseAmountFromCash + purchaseAmountFromCash);
+        displayTextForDailySell += "<b><i>"+"  Cash:  " + remainingCash + " </b></i > " + "\n";
+        displayTextForDokanSell += "<b><i>"+"  Cash In:  " + remainingCash + " </b></i > " + "\n";
 
-             // Add remaining cash to JSON object
-             dateData.Add("RemainingCash", remainingCash);
+        // Add remaining cash to JSON object
+        dateData.Add("RemainingCash", remainingCash);
+
         // Add remaining cash to JSON object
         dateData.Add("Date", dateString);
         dateData.Add("SellToHotel", sellToHotel);
         // Convert dateData to JSON string
-        string dateDataJsonString = dateData.ToString();
+        dokanJsonToSubmit = dateData.ToString();
+
+        displayTextForDailySell += "-------------------------\n";
+        displayTextForDailySell += "SELL = " + (expenseAmountFromCash + purchaseAmountFromCash + remainingCash) + $"    Hotel({sellToHotel})";
+
+        dailySellSummaryText.text = displayTextForDailySell;
+
+        ShowDailyDokanSummary(displayTextForDokanSell, expenseAmountFromFund, purchaseAmountFromFund, remainingCash);
+
+    }
+    void ShowDailyDokanSummary(string data, int expenseAmount, int purchaseAmount, int remainingCash)
+    {
+        int prevAmount = int.Parse(PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0"));
+
+        newTmpDokanAmount = prevAmount - (expenseAmount + purchaseAmount) + remainingCash;
+
+        data += "-------------------------\n";
+        data += $"Total =   {newTmpDokanAmount}";
+        dailyDokanSummaryText.text = data;
+
+    }
+    void ShowDailyCigarSummary(string jsonData)
+    {
+        JObject data = JObject.Parse(jsonData);
+        JObject dateData = (JObject)data[dateString];
+
+        JArray cashIn = (JArray)dateData["Cash_in"];
+        JArray cashOut = (JArray)dateData["Cash_out"];
+
+        string displayText = $"{dateString}:    old:  {PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH,"0")}\n";
+        displayText += "  Cash In:\n";
+        int cashInAmount = 0;
+        foreach (JObject cashInTransaction in cashIn)
+        {
+            foreach (var property in cashInTransaction.Properties())
+            {
+                if (!string.IsNullOrEmpty(property.Value.ToString()) && !property.Value.ToString().Equals("0"))
+                {
+                    displayText += $"    {property.Name}  (+){property.Value}\n";
+                    cashInAmount += int.Parse(property.Value.ToString());
+                }
+            }
+        }
+
+        displayText += "  Cash Out:\n";
+        int cashOutAmount = 0;
+        foreach (JObject cashOutTransaction in cashOut)
+        {
+            foreach (var property in cashOutTransaction.Properties())
+            {
+                if (!string.IsNullOrEmpty(property.Value.ToString()) && !property.Value.ToString().Equals("0"))
+                {
+                    displayText += $"    {property.Name} (-){property.Value}\n";
+                    cashOutAmount += int.Parse(property.Value.ToString());
+                }    
+            }
+        }  
 
         displayText += "-------------------------\n";
-        displayText += "SELL = " + (expenseAmount + purchaseAmount + remainingCash) + $"    Hotel({sellToHotel})";
 
-        Debug.LogError("Add an Erorr popup if accessing without any sell");
-        dailySellSummaryText.text = displayText;
+        int prevAmount = int.Parse(PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH, "0"));
+        newTmpCigarAmount = prevAmount + cashInAmount - cashOutAmount;
 
+        displayText += "Total:  " + (newTmpCigarAmount).ToString();
+
+        dailyCigarSummaryText.text = displayText;
+
+
+    }
+    void ShowDailyShantoSummary(string jsonData)
+    {
+        JObject data = JObject.Parse(jsonData);
+        JObject dateData = (JObject)data[dateString];
+
+        JArray cashIn = (JArray)dateData["Cash_in"];
+        JArray cashOut = (JArray)dateData["Cash_out"];
+
+        string displayText = $"{dateString}:    old:  {PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH,"0")}\n";
+        displayText += "  Cash In:\n";
+        int cashInAmount = 0;
+        foreach (JObject cashInTransaction in cashIn)
+        {
+            foreach (var property in cashInTransaction.Properties())
+            {
+                if (!string.IsNullOrEmpty(property.Value.ToString()) && !property.Value.ToString().Equals("0"))
+                {
+                    displayText += $"    {property.Name}  (+){property.Value}\n";
+                    cashInAmount += int.Parse(property.Value.ToString());
+                }
+            }
+        }
+
+        displayText += "  Cash Out:\n";
+        int cashOutAmount = 0;
+        foreach (JObject cashOutTransaction in cashOut)
+        {
+            foreach (var property in cashOutTransaction.Properties())
+            {
+                if (!string.IsNullOrEmpty(property.Value.ToString()) && !property.Value.ToString().Equals("0"))
+                {
+                    displayText += $"    {property.Name}  (-){property.Value}\n";
+                    cashOutAmount += int.Parse(property.Value.ToString());
+                }    
+            }
+        }  
+
+        displayText += "-------------------------\n";
+
+        int prevAmount = int.Parse(PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH, "0"));
+        newTmpShantoAmount = prevAmount + cashInAmount - cashOutAmount;
+
+        displayText += "Total:  " + (newTmpShantoAmount).ToString();
+
+        dailyShantoSummaryText.text = displayText;
+
+
+    }
+
+    public void SubmitDatas()
+    {
+        processingPanel.SetActive(true);
+
+        PlayerPrefs.SetString(StringManager.DOKAN_TOTAL_CASH, $"{newTmpDokanAmount}");
+        PlayerPrefs.SetString(StringManager.CIGAR_TOTAL_CASH, $"{newTmpCigarAmount}");
+        PlayerPrefs.SetString(StringManager.SHANTO_TOTAL_CASH, $"{newTmpShantoAmount}");
+
+        StartCoroutine(MainController.instance.PostRequest(dokanJsonToSubmit, 3, OnSuccessfulDokanSubmit, OnErrorSubmit));
+        
+    }
+    void OnSuccessfulDokanSubmit(string msg)
+    {
+        StartCoroutine(MainController.instance.PostRequest(cigarJsonToSubmit, 4, OnSuccessfulCigarSubmit, OnErrorSubmit));
+    }
+    void OnSuccessfulCigarSubmit(string msg)
+    {
+        StartCoroutine(MainController.instance.PostRequest(shantoJsonToSubmit, 5, OnSuccessfulShantoSubmit, OnErrorSubmit));
+
+    }
+    void OnSuccessfulShantoSubmit(string msg)
+    {
+        processingPanel.SetActive(false);
+        successPanel.SetActive(true);
+    }
+    void OnErrorSubmit(string msg)
+    {
+        processingPanel.SetActive(false);
+        errorPanel.SetActive(true);
     }
 }

@@ -63,7 +63,7 @@ public class MainController : MonoBehaviour
             callBack(request.downloadHandler.text);  
         }
     }
-    public IEnumerator PostRequest(string json, int intValue, Action<string> callBack)
+    public IEnumerator PostRequest(string json, int intValue, Action<string> successCallBack = null, Action<string> errorCallBack = null)
     {
         // Create a new UnityWebRequest and set the method to POST
         var request = new UnityWebRequest(url, "POST");
@@ -78,15 +78,15 @@ public class MainController : MonoBehaviour
 
         if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
         {
-            Debug.Log(request.error);
+            errorCallBack(request.error);
         }
         else
         {
-            Debug.Log(request.downloadHandler.text);
-            callBack(request.downloadHandler.text);
+            successCallBack(request.downloadHandler.text);
         }
-
-        //StartCoroutine(GetRequest(url));
     }
-
+    public void OnExitApplication()
+    {
+        Application.Quit(0);
+    }
 }

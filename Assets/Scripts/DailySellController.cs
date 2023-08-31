@@ -40,6 +40,21 @@ public class DailySellController : MonoBehaviour
 
     public void OnStart()
     {
+        CleanCalcAndFields();
+
+        sellToButton.onClick.AddListener(() =>
+        {
+            if (sellToOutside)
+                SellToOutside();
+            else
+                SellToHotel();
+        });
+
+        SubmitSellData(0);
+        SubmitSellData(1);
+    }
+    public void OnEnable()
+    {
         // Format the date as a string
         dateString = MainController.instance.GetToday();
 
@@ -56,19 +71,6 @@ public class DailySellController : MonoBehaviour
         {
             PlayerPrefs.SetString(key, UpdateJsonForOldDates(PlayerPrefs.GetString(key, "{}")));
         }
-
-        CleanCalcAndFields();
-
-        sellToButton.onClick.AddListener(() =>
-        {
-            if (sellToOutside)
-                SellToOutside();
-            else
-                SellToHotel();
-        });
-
-        SubmitSellData(0);
-        SubmitSellData(1);
     }
 
     private void Update()
@@ -252,7 +254,7 @@ public class DailySellController : MonoBehaviour
 
         print(PlayerPrefs.GetString(tmpJsonPref, "{}"));
         print(PlayerPrefs.GetString(mainJsonPref, "{}"));
-        UpdateTotalSellUI(tmpJsonData[dateString]["Total Sell"].ToString(), index);
+        UpdateTotalSellUI(mainJsonData[dateString]["Total Sell"].ToString(), index);
 
         StartCoroutine(MainController.instance.PostRequest(PlayerPrefs.GetString(tmpJsonPref, "{}"), index + 1, UpdateJsonOnEachSell));
 
