@@ -217,15 +217,28 @@ public class DailySellController : MonoBehaviour
         JObject mainJsonData = GetJsonData(mainJsonPref);
 
         // Check if current date exists in JSON data
-        JArray tmpDateArray = tmpJsonData[dateString]?["Data"] as JArray ?? new JArray();
-        JArray mainDateArray = mainJsonData[dateString]?["Data"] as JArray ?? new JArray();
 
-        if (tmpDateArray.Count == 0)
+        JArray tmpDateArray; 
+        JArray mainDateArray;
+
+        // Check if current date exists in JSON data
+        if (tmpJsonData[dateString] != null)
+        {
+            // Append new data to existing date array
+            tmpDateArray = (JArray)tmpJsonData[dateString]["Data"];
+            mainDateArray = (JArray)mainJsonData[dateString]["Data"];
+        }
+        else
         {
             PlayerPrefs.SetInt(id, 1);
 
             // Create new date array and append to JSON data
-            mainJsonData[dateString] = tmpJsonData[dateString] = new JObject();
+            tmpDateArray = new JArray();
+            mainDateArray = new JArray();
+
+            tmpJsonData[dateString] = new JObject();
+            mainJsonData[dateString] = new JObject();
+
             tmpJsonData[dateString]["Data"] = tmpDateArray;
             mainJsonData[dateString]["Data"] = mainDateArray;
         }
@@ -246,7 +259,8 @@ public class DailySellController : MonoBehaviour
         PlayerPrefs.SetInt(id, PlayerPrefs.GetInt(id, 1) + 1);
 
         //get total sell price
-        mainJsonData[dateString]["Total Sell"] = tmpJsonData[dateString]["Total Sell"] = (Convert.ToDouble(tmpJsonData[dateString]["Total Sell"]) + Convert.ToDouble(price)).ToString();
+        mainJsonData[dateString]["Total Sell"] = (Convert.ToDouble(tmpJsonData[dateString]["Total Sell"]) + Convert.ToDouble(price)).ToString();
+        tmpJsonData[dateString]["Total Sell"] = (Convert.ToDouble(tmpJsonData[dateString]["Total Sell"]) + Convert.ToDouble(price)).ToString();
 
         // Store updated JSON data in PlayerPrefs
         PlayerPrefs.SetString(tmpJsonPref, tmpJsonData.ToString());

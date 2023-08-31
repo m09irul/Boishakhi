@@ -43,10 +43,9 @@ public class MainController : MonoBehaviour
     public IEnumerator GetRequest(string param, Action<string> callBack)
     {
         // Append the parameter to the URL
-        url = url + "?" + param;
-
+        var tmpUrl = url + "?" + param;
         // Create a new UnityWebRequest and set the method to GET
-        var request = new UnityWebRequest(url, "GET");
+        var request = new UnityWebRequest(tmpUrl, "GET");
         request.downloadHandler = new DownloadHandlerBuffer();
 
         // Send the request and wait for a response
@@ -68,6 +67,7 @@ public class MainController : MonoBehaviour
         // Create a new UnityWebRequest and set the method to POST
         var request = new UnityWebRequest(url, "POST");
         string requestBody = "{\"jsonData\":" + json + ",\"intValue\":" + intValue + "}";
+        print(requestBody);
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(requestBody);
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();

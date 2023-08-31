@@ -98,8 +98,10 @@ public class ManagementController : MonoBehaviour
     {
         //get total sell data:
         JObject cigarSellData = JObject.Parse(PlayerPrefs.GetString(StringManager.CIGAR_SELL_MAIN, "{}"));
-        print(cigarSellData);
-        return cigarSellData[dateString]["Total Sell"] == null ? "0" : (string)cigarSellData[dateString]["Total Sell"];
+        if (cigarSellData[dateString] != null)
+            return cigarSellData[dateString]["Total Sell"] == null ? "0" : (string)cigarSellData[dateString]["Total Sell"];
+        else
+            return "0";
 
     }
     public void UpdateTotalCashUI()
@@ -632,21 +634,26 @@ public class ManagementController : MonoBehaviour
         PlayerPrefs.SetString(StringManager.DOKAN_TOTAL_CASH, $"{newTmpDokanAmount}");
         PlayerPrefs.SetString(StringManager.CIGAR_TOTAL_CASH, $"{newTmpCigarAmount}");
         PlayerPrefs.SetString(StringManager.SHANTO_TOTAL_CASH, $"{newTmpShantoAmount}");
-
+        print(dokanJsonToSubmit);
+        print(cigarJsonToSubmit);
+        print(shantoJsonToSubmit);
         StartCoroutine(MainController.instance.PostRequest(dokanJsonToSubmit, 3, OnSuccessfulDokanSubmit, OnErrorSubmit));
         
     }
     void OnSuccessfulDokanSubmit(string msg)
     {
+        print(msg);
         StartCoroutine(MainController.instance.PostRequest(cigarJsonToSubmit, 4, OnSuccessfulCigarSubmit, OnErrorSubmit));
     }
     void OnSuccessfulCigarSubmit(string msg)
     {
+        print(msg);
         StartCoroutine(MainController.instance.PostRequest(shantoJsonToSubmit, 5, OnSuccessfulShantoSubmit, OnErrorSubmit));
 
     }
     void OnSuccessfulShantoSubmit(string msg)
     {
+        print(msg);
         processingPanel.SetActive(false);
         successPanel.SetActive(true);
     }
