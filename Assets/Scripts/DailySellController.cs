@@ -266,8 +266,6 @@ public class DailySellController : MonoBehaviour
         PlayerPrefs.SetString(tmpJsonPref, tmpJsonData.ToString());
         PlayerPrefs.SetString(mainJsonPref, mainJsonData.ToString());
 
-        print(PlayerPrefs.GetString(tmpJsonPref, "{}"));
-        print(PlayerPrefs.GetString(mainJsonPref, "{}"));
         UpdateTotalSellUI(mainJsonData[dateString]["Total Sell"].ToString(), index);
 
         StartCoroutine(MainController.instance.PostRequest(PlayerPrefs.GetString(tmpJsonPref, "{}"), index + 1, UpdateJsonOnEachSell));

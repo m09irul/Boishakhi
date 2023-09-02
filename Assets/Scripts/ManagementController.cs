@@ -64,7 +64,15 @@ public class ManagementController : MonoBehaviour
     string cigarJsonToSubmit;
     string shantoJsonToSubmit;
 
-    public GameObject successPanel, errorPanel, processingPanel;
+    public GameObject successPanel, errorPanel, processingPanel, contactShantoPanel, alreadySubmittedPanel;
+
+    [Space]
+    public GameObject listPage;
+    public TextMeshProUGUI dokanListText;
+    public TextMeshProUGUI cigarListText;
+    public TextMeshProUGUI ShantoListText;
+    public TextMeshProUGUI[] allCashTexts;
+
     public void OnStart()
     {
         expenseAddButton.onClick.AddListener(()=>OnAddMoreFields(expensePurchaseContainerPrefab, expenseContainerParent, expenseFields));
@@ -110,7 +118,7 @@ public class ManagementController : MonoBehaviour
         cigarCashTillToday.text = PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH, "0");
         shantoCashTillToday.text = PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH, "0");
 
-        StartCoroutine(MainController.instance.GetRequest($"myInt={4}&myDate={MainController.instance.GetToday()}", UpdateTotalCash));
+        StartCoroutine(MainController.instance.GetRequest($"myInt={4}&myDate={MainController.instance.GetToday()}", UpdateTotalCash, OnRequestError));
     }
     void UpdateTotalCash(string respose)
     {
@@ -123,38 +131,66 @@ public class ManagementController : MonoBehaviour
 
         // Define an array of keys to update
         string[] keysToUpdate = new string[] {
+        StringManager.HOTEL_TOTAL_CASH,
         StringManager.DOKAN_TOTAL_CASH,
         StringManager.SHANTO_TOTAL_CASH,
         StringManager.SHANTO_HOTEL_TOTAL_CASH,
+        null,
         StringManager.CIGAR_TOTAL_CASH,
+        null,
         StringManager.OVREALL_TOTAL_CASH
-        };
+    };
 
-        PlayerPrefs.SetString(StringManager.HOTEL_TOTAL_CASH, elements[0].ToString());
-        PlayerPrefs.SetString(StringManager.DOKAN_TOTAL_CASH, elements[1].ToString());
-        PlayerPrefs.SetString(StringManager.SHANTO_TOTAL_CASH, elements[2].ToString());
-        PlayerPrefs.SetString(StringManager.SHANTO_HOTEL_TOTAL_CASH, elements[3].ToString());
-        PlayerPrefs.SetString(StringManager.CIGAR_TOTAL_CASH, elements[5].ToString());
-        PlayerPrefs.SetString(StringManager.OVREALL_TOTAL_CASH, elements[7].ToString());
+        // Define a method to check if a value is valid
+        bool IsValidValue(JToken value)
+        {
+            return value.Type != JTokenType.Null && value.ToString() != "" && value.ToString() != "#N/A";
+        }
+
+        // Update the PlayerPrefs with valid values only
+        for (int i = 0; i < elements.Count; i++)
+        {
+            if (keysToUpdate[i] != null && IsValidValue(elements[i]))
+                PlayerPrefs.SetString(keysToUpdate[i], elements[i].ToString());
+        }
 
         dokanCashTillToday.text = PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0");
         cigarCashTillToday.text = PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH, "0");
         shantoCashTillToday.text = PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH, "0");
     }
-    void UpdateDokanCash(string respose)
+    public void OnListButtonClicked()
     {
+        processingPanel.SetActive(true);
+        StartCoroutine(MainController.instance.GetRequest($"myInt={1}&myDate={MainController.instance.GetToday()}", UpdateDokanCash, OnRequestError));
+        StartCoroutine(MainController.instance.GetRequest($"myInt={2}&myDate={MainController.instance.GetToday()}", UpdateCigarCash, OnRequestError));
+        StartCoroutine(MainController.instance.GetRequest($"myInt={3}&myDate={MainController.instance.GetToday()}", UpdateShantoCash, OnRequestError));
+    }
+    void UpdateDokanCash(string response)
+    {
+        
+        if (processingPanel.activeInHierarchy)
+            processingPanel.SetActive(false);
         // Parse the JSON data
-        JObject jo = JObject.Parse(respose);
+        JObject jo = JObject.Parse(response);
 
         // Access the 'Purchase' property
         JArray purchase = (JArray)jo["Purchase"];
+        JArray expense = (JArray)jo["Expense"];
 
         // Create a StringBuilder to store the formatted string
         StringBuilder sb = new StringBuilder();
 
+        // Access the 'PrevAmount' property
+        JArray prevAmount = (JArray)jo["PrevAmount"];
+
+        // Get the previous amount value from the 6th column of the 'PrevAmount' array
+        int previousAmount = (int)prevAmount[1];
+
         // Append the header to the StringBuilder
-        sb.AppendLine("Purchase:");
-        sb.AppendLine("Date\tItem\tValue");
+        sb.AppendLine("Previous Amount: " + previousAmount);
+
+        // Create a dictionary to store the data grouped by date
+        Dictionary<string, List<string>> dataByDate = new Dictionary<string, List<string>>();
 
         // Iterate over the elements of the 'Purchase' array
         foreach (JArray element in purchase)
@@ -166,22 +202,248 @@ public class ManagementController : MonoBehaviour
 
             // Extract only the date value from the date string
             date = date.Substring(0, 10);
-            // Split the date into its components
-            string[] dateParts = date.Split('/');
 
             // Reformat the date in day-month-year format
-            date = $"{dateParts[2]}-{dateParts[1]}-{dateParts[0]}";
+            DateTime dateTime;
+            if (DateTime.TryParse(date, out dateTime))
+                date = dateTime.ToString("yyyy-MM-dd");
 
             // Append the values to the StringBuilder
-            sb.AppendLine($"{date}\t{item}\t{value}");
+            if (!string.IsNullOrEmpty(value) && value != "0")
+            {
+                int value2Int = int.Parse(value);
+                string line = $"{date}   {item}   (-){value}   {previousAmount - value2Int}";
+                previousAmount += value2Int;
+
+                // Add the line to the dictionary, grouped by date
+                if (!dataByDate.ContainsKey(date))
+                    dataByDate[date] = new List<string>();
+                dataByDate[date].Add(line);
+            }
         }
 
+        // Iterate over the elements of the 'Expense' array
+        foreach (JArray element in expense)
+        {
+            // Access the values of the element
+            string date = (string)element[0];
+            string item = (string)element[1];
+            string value = (string)element[2];
+
+            // Extract only the date value from the date string
+            date = date.Substring(0, 10);
+
+            // Reformat the date in day-month-year format
+            DateTime dateTime;
+            if (DateTime.TryParse(date, out dateTime))
+                date = dateTime.ToString("yyyy-MM-dd");
+
+            // Append the values to the StringBuilder
+            if (!string.IsNullOrEmpty(value) && value != "0" && !item.Equals("Shanto") && !item.Equals("Rent") && !item.Equals("Dokan"))
+            {
+                int value2Int = int.Parse(value);
+                string line = $"{date}   {item}   (-){value}   {previousAmount - value2Int}";
+                previousAmount += value2Int;
+
+                // Add the line to the dictionary, grouped by date
+                if (!dataByDate.ContainsKey(date))
+                    dataByDate[date] = new List<string>();
+                dataByDate[date].Add(line);
+            }
+        }
+
+        // Iterate over the dates in ascending order and append all lines for each date to the StringBuilder
+        foreach (var kvp in dataByDate.OrderBy(kvp => DateTime.Parse(kvp.Key)))
+        {
+            if (kvp.Value.Count > 0)
+            {
+                foreach (string line in kvp.Value)
+                    sb.AppendLine(line);
+            }
+        }
+
+        sb.AppendLine("-----------------------");
         // Get the formatted string from the StringBuilder
         string result = sb.ToString();
 
         // Print the result
-        print(result);
+        dokanListText.text = result;
     }
+
+    void UpdateCigarCash(string response)
+    {
+        if (processingPanel.activeInHierarchy)
+            processingPanel.SetActive(false);
+        // Parse the JSON data
+        JObject jo = JObject.Parse(response);
+
+        // Access the 'Cigar' property
+        JArray cigar = (JArray)jo["Cigar"];
+
+        // Access the 'PrevAmount' property
+        JArray prevAmount = (JArray)jo["PrevAmount"];
+
+        // Get the previous amount value from the 6th column of the 'PrevAmount' array
+        int previousAmount = (int)prevAmount[5];
+
+        // Create a StringBuilder to store the formatted string
+        StringBuilder sb = new StringBuilder();
+
+        // Append the header to the StringBuilder
+        sb.AppendLine("Previous Amount: " + previousAmount);
+
+        // Create a dictionary to store the data grouped by date
+        Dictionary<string, List<string>> dataByDate = new Dictionary<string, List<string>>();
+
+        // Iterate over the elements of the 'Cigar' array
+        for (int i = 0; i < cigar.Count; i++)
+        {
+            // Access the values of the element
+            JArray element = (JArray)cigar[i];
+            string date = (string)element[0];
+            string cashInVal = (string)element[1];
+            string cashInNote = (string)element[2];
+            string cashOutVal = (string)element[3];
+            string cashOutNote = (string)element[4];
+
+            // Extract only the date value from the date string
+            date = date.Substring(0, 10);
+
+            // Reformat the date in day-month-year format
+            DateTime dateTime;
+            if (DateTime.TryParse(date, out dateTime))
+                date = dateTime.ToString("yyyy-MM-dd");
+
+            // Append the values to the StringBuilder
+            if (!string.IsNullOrEmpty(cashInVal) && cashInVal != "0")
+            {
+                int value2Int = int.Parse(cashInVal);
+                string line = $"{date}   {cashInNote}   (+){value2Int}   {previousAmount + value2Int}";
+                previousAmount += value2Int;
+
+                // Add the line to the dictionary, grouped by date
+                if (!dataByDate.ContainsKey(date))
+                    dataByDate[date] = new List<string>();
+                dataByDate[date].Add(line);
+            }
+            if (!string.IsNullOrEmpty(cashOutVal) && cashOutVal != "0")
+            {
+                int amount4Int = int.Parse(cashOutVal);
+                string line = $"{date}   {cashOutNote}   (-){amount4Int}   {previousAmount - amount4Int}";
+                previousAmount -= amount4Int;
+
+                // Add the line to the dictionary, grouped by date
+                if (!dataByDate.ContainsKey(date))
+                    dataByDate[date] = new List<string>();
+                dataByDate[date].Add(line);
+            }
+        }
+
+        // Iterate over all lines for each date and append them to the StringBuilder without appending dates as headers.
+        foreach (var kvp in dataByDate.OrderBy(kvp => DateTime.Parse(kvp.Key)))
+        {
+            if (kvp.Value.Count > 0)
+            {
+                foreach (string line in kvp.Value)
+                    sb.AppendLine(line);
+            }
+        }
+
+        sb.AppendLine("-----------------------");
+        // Get the formatted string from the StringBuilder
+        string result = sb.ToString();
+
+        // Print the result
+        cigarListText.text = result;
+    }
+
+    void UpdateShantoCash(string response)
+    {
+        if (processingPanel.activeInHierarchy)
+            processingPanel.SetActive(false);
+        // Parse the JSON data
+        JObject jo = JObject.Parse(response);
+
+        // Access the 'Cigar' property
+        JArray cigar = (JArray)jo["Shanto"];
+
+        // Access the 'PrevAmount' property
+        JArray prevAmount = (JArray)jo["PrevAmount"];
+
+        // Get the previous amount value from the 6th column of the 'PrevAmount' array
+        int previousAmount = (int)prevAmount[2];
+
+        // Create a StringBuilder to store the formatted string
+        StringBuilder sb = new StringBuilder();
+
+        // Append the header to the StringBuilder
+        sb.AppendLine("Previous Amount: " + previousAmount);
+
+        // Create a dictionary to store the data grouped by date
+        Dictionary<string, List<string>> dataByDate = new Dictionary<string, List<string>>();
+
+        // Iterate over the elements of the 'Cigar' array
+        for (int i = 0; i < cigar.Count; i++)
+        {
+            // Access the values of the element
+            JArray element = (JArray)cigar[i];
+            string date = (string)element[0];
+            string cashInVal = (string)element[1];
+            string cashInNote = (string)element[2];
+            string cashOutVal = (string)element[3];
+            string cashOutNote = (string)element[4];
+
+            // Extract only the date value from the date string
+            date = date.Substring(0, 10);
+
+            // Reformat the date in day-month-year format
+            DateTime dateTime;
+            if (DateTime.TryParse(date, out dateTime))
+                date = dateTime.ToString("yyyy-MM-dd");
+
+            // Append the values to the StringBuilder
+            if (!string.IsNullOrEmpty(cashInVal) && cashInVal != "0")
+            {
+                int value2Int = int.Parse(cashInVal);
+                string line = $"{date}   {cashInNote}   (+){value2Int}   {previousAmount + value2Int}";
+                previousAmount += value2Int;
+
+                // Add the line to the dictionary, grouped by date
+                if (!dataByDate.ContainsKey(date))
+                    dataByDate[date] = new List<string>();
+                dataByDate[date].Add(line);
+            }
+            if (!string.IsNullOrEmpty(cashOutVal) && cashOutVal != "0")
+            {
+                int amount4Int = int.Parse(cashOutVal);
+                string line = $"{date}   {cashOutNote}   (-){amount4Int}   {previousAmount - amount4Int}";
+                previousAmount -= amount4Int;
+
+                // Add the line to the dictionary, grouped by date
+                if (!dataByDate.ContainsKey(date))
+                    dataByDate[date] = new List<string>();
+                dataByDate[date].Add(line);
+            }
+        }
+
+        // Iterate over all lines for each date and append them to the StringBuilder without appending dates as headers.
+        foreach (var kvp in dataByDate.OrderBy(kvp => DateTime.Parse(kvp.Key)))
+        {
+            if (kvp.Value.Count > 0)
+            {
+                foreach (string line in kvp.Value)
+                    sb.AppendLine(line);
+            }
+        }
+
+        sb.AppendLine("-----------------------");
+        // Get the formatted string from the StringBuilder
+        string result = sb.ToString();
+
+        // Print the result
+        ShantoListText.text = result;
+    }
+
 
     void UpdateCigarSellUI(string val)
     {
@@ -576,7 +838,6 @@ public class ManagementController : MonoBehaviour
 
         dailyCigarSummaryText.text = displayText;
 
-
     }
     void ShowDailyShantoSummary(string jsonData)
     {
@@ -623,41 +884,59 @@ public class ManagementController : MonoBehaviour
         displayText += "Total:  " + (newTmpShantoAmount).ToString();
 
         dailyShantoSummaryText.text = displayText;
-
-
     }
 
     public void SubmitDatas()
     {
-        processingPanel.SetActive(true);
+        if (PlayerPrefs.GetString(StringManager.ALREADY_SUBMITTED_TODAY, "0").Equals(dateString))
+        {
+            alreadySubmittedPanel.SetActive(true);
+        }
+        else
+        {
+            processingPanel.SetActive(true);
 
-        PlayerPrefs.SetString(StringManager.DOKAN_TOTAL_CASH, $"{newTmpDokanAmount}");
-        PlayerPrefs.SetString(StringManager.CIGAR_TOTAL_CASH, $"{newTmpCigarAmount}");
-        PlayerPrefs.SetString(StringManager.SHANTO_TOTAL_CASH, $"{newTmpShantoAmount}");
-        print(dokanJsonToSubmit);
-        print(cigarJsonToSubmit);
-        print(shantoJsonToSubmit);
-        StartCoroutine(MainController.instance.PostRequest(dokanJsonToSubmit, 3, OnSuccessfulDokanSubmit, OnErrorSubmit));
+            StartCoroutine(MainController.instance.PostRequest(dokanJsonToSubmit, 3, OnSuccessfulDokanSubmit, OnRequestError));
+        }
         
     }
     void OnSuccessfulDokanSubmit(string msg)
     {
-        print(msg);
-        StartCoroutine(MainController.instance.PostRequest(cigarJsonToSubmit, 4, OnSuccessfulCigarSubmit, OnErrorSubmit));
+        if (msg.Equals("Done"))
+        {
+            PlayerPrefs.SetString(StringManager.DOKAN_TOTAL_CASH, $"{newTmpDokanAmount}");
+
+            StartCoroutine(MainController.instance.PostRequest(cigarJsonToSubmit, 4, OnSuccessfulCigarSubmit, OnRequestError));
+        }
+        else
+            contactShantoPanel.SetActive(true);
     }
     void OnSuccessfulCigarSubmit(string msg)
     {
-        print(msg);
-        StartCoroutine(MainController.instance.PostRequest(shantoJsonToSubmit, 5, OnSuccessfulShantoSubmit, OnErrorSubmit));
-
+        if (msg.Equals("Done"))
+        {
+            PlayerPrefs.SetString(StringManager.CIGAR_TOTAL_CASH, $"{newTmpCigarAmount}");
+            
+            StartCoroutine(MainController.instance.PostRequest(shantoJsonToSubmit, 5, OnSuccessfulShantoSubmit, OnRequestError));
+        }
+        else
+            contactShantoPanel.SetActive(true);
     }
     void OnSuccessfulShantoSubmit(string msg)
     {
-        print(msg);
-        processingPanel.SetActive(false);
-        successPanel.SetActive(true);
+        if (msg.Equals("Done"))
+        {
+            PlayerPrefs.SetString(StringManager.SHANTO_TOTAL_CASH, $"{newTmpShantoAmount}");
+            PlayerPrefs.SetString(StringManager.ALREADY_SUBMITTED_TODAY, $"{dateString}");
+
+            processingPanel.SetActive(false);
+            successPanel.SetActive(true);
+        }
+        else
+            contactShantoPanel.SetActive(true);
+        
     }
-    void OnErrorSubmit(string msg)
+    void OnRequestError(string msg)
     {
         processingPanel.SetActive(false);
         errorPanel.SetActive(true);

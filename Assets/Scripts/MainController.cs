@@ -20,7 +20,8 @@ public class MainController : MonoBehaviour
     public DailySellController dailySellController;
 
     // The URL of the deployed web app
-    private string url = "https://script.google.com/macros/s/AKfycbylK6ALrw5nvNaIVDHjtK6nHUQsbemGbQtr62nwpxel8781LW9UX2_TdIpN8a-mk-I/exec";
+    private string postUrl = "https://script.google.com/macros/s/AKfycbxWKVj0LQ6Hsht8czyg_QwUWriguiCbZ5CM0780LKZL6VbQDUN5qfL2f2KXtuWxMyrV5g/exec";
+    private string getUrl = "https://script.google.com/macros/s/AKfycbylK6ALrw5nvNaIVDHjtK6nHUQsbemGbQtr62nwpxel8781LW9UX2_TdIpN8a-mk-I/exec";
 
     private void Start()
     {
@@ -40,10 +41,10 @@ public class MainController : MonoBehaviour
             return now.Date.ToString("yyyy-MM-dd");
         }
     }
-    public IEnumerator GetRequest(string param, Action<string> callBack)
+    public IEnumerator GetRequest(string param, Action<string> callBack, Action<string> errorCallBack = null)
     {
         // Append the parameter to the URL
-        var tmpUrl = url + "?" + param;
+        var tmpUrl = getUrl + "?" + param;
         // Create a new UnityWebRequest and set the method to GET
         var request = new UnityWebRequest(tmpUrl, "GET");
         request.downloadHandler = new DownloadHandlerBuffer();
@@ -53,21 +54,19 @@ public class MainController : MonoBehaviour
 
         if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
         {
-            Debug.Log(request.error);
+            errorCallBack(request.error);
         }
         else
         {
-            Debug.Log(request.downloadHandler.text);
-
+            print(request.downloadHandler.text);
             callBack(request.downloadHandler.text);  
         }
     }
     public IEnumerator PostRequest(string json, int intValue, Action<string> successCallBack = null, Action<string> errorCallBack = null)
     {
         // Create a new UnityWebRequest and set the method to POST
-        var request = new UnityWebRequest(url, "POST");
+        var request = new UnityWebRequest(postUrl, "POST");
         string requestBody = "{\"jsonData\":" + json + ",\"intValue\":" + intValue + "}";
-        print(requestBody);
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(requestBody);
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();

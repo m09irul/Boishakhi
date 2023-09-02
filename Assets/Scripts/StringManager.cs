@@ -19,4 +19,7 @@ public static class StringManager
     public static string SHANTO_HOTEL_TOTAL_CASH = "ShantoHotelCashTillToday";
     public static string HOTEL_TOTAL_CASH = "HotelCashTillToday";
     public static string OVREALL_TOTAL_CASH = "OverallCashTillToday";
+
+    public static string ALREADY_SUBMITTED_TODAY = "AllreadySubmittedToday";
+
 }
