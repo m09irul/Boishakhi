@@ -200,13 +200,13 @@ public class ManagementController : MonoBehaviour
             string item = (string)element[1];
             string value = (string)element[2];
 
-            // Extract only the date value from the date string
+            /*// Extract only the date value from the date string
             date = date.Substring(0, 10);
 
             // Reformat the date in day-month-year format
             DateTime dateTime;
             if (DateTime.TryParse(date, out dateTime))
-                date = dateTime.ToString("yyyy-MM-dd");
+                date = dateTime.ToString("yyyy-MM-dd");*/
 
             // Append the values to the StringBuilder
             if (!string.IsNullOrEmpty(value) && value != "0")
@@ -230,13 +230,13 @@ public class ManagementController : MonoBehaviour
             string item = (string)element[1];
             string value = (string)element[2];
 
-            // Extract only the date value from the date string
+            /*// Extract only the date value from the date string
             date = date.Substring(0, 10);
 
             // Reformat the date in day-month-year format
             DateTime dateTime;
             if (DateTime.TryParse(date, out dateTime))
-                date = dateTime.ToString("yyyy-MM-dd");
+                date = dateTime.ToString("yyyy-MM-dd");*/
 
             // Append the values to the StringBuilder
             if (!string.IsNullOrEmpty(value) && value != "0" && !item.Equals("Shanto") && !item.Equals("Rent") && !item.Equals("Dokan"))
@@ -306,13 +306,13 @@ public class ManagementController : MonoBehaviour
             string cashOutVal = (string)element[3];
             string cashOutNote = (string)element[4];
 
-            // Extract only the date value from the date string
+            /*// Extract only the date value from the date string
             date = date.Substring(0, 10);
 
             // Reformat the date in day-month-year format
             DateTime dateTime;
             if (DateTime.TryParse(date, out dateTime))
-                date = dateTime.ToString("yyyy-MM-dd");
+                date = dateTime.ToString("yyyy-MM-dd");*/
 
             // Append the values to the StringBuilder
             if (!string.IsNullOrEmpty(cashInVal) && cashInVal != "0")
@@ -393,13 +393,13 @@ public class ManagementController : MonoBehaviour
             string cashOutVal = (string)element[3];
             string cashOutNote = (string)element[4];
 
-            // Extract only the date value from the date string
+            /*// Extract only the date value from the date string
             date = date.Substring(0, 10);
 
             // Reformat the date in day-month-year format
             DateTime dateTime;
             if (DateTime.TryParse(date, out dateTime))
-                date = dateTime.ToString("yyyy-MM-dd");
+                date = dateTime.ToString("yyyy-MM-dd");*/
 
             // Append the values to the StringBuilder
             if (!string.IsNullOrEmpty(cashInVal) && cashInVal != "0")
@@ -850,6 +850,16 @@ public class ManagementController : MonoBehaviour
         string displayText = $"{dateString}:    old:  {PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH,"0")}\n";
         displayText += "  Cash In:\n";
         int cashInAmount = 0;
+        if (!string.IsNullOrEmpty(S_D_expenseTexts[0].text) && !S_D_expenseTexts[0].text.Equals("0"))
+        {
+            displayText += $"    Shanto  (+){S_D_expenseTexts[0].text}\n";
+            cashInAmount += int.Parse(S_D_expenseTexts[0].text);
+        }
+        if (!string.IsNullOrEmpty(S_D_expenseTexts[1].text) && !S_D_expenseTexts[1].text.Equals("0"))
+        {
+            displayText += $"    Dokan  (+){S_D_expenseTexts[1].text}\n";
+            cashInAmount += int.Parse(S_D_expenseTexts[1].text);
+        }
         foreach (JObject cashInTransaction in cashIn)
         {
             foreach (var property in cashInTransaction.Properties())
@@ -902,29 +912,35 @@ public class ManagementController : MonoBehaviour
     }
     void OnSuccessfulDokanSubmit(string msg)
     {
-        if (msg.Equals("Done"))
+        if (msg.Equals("\"Done\""))
         {
             PlayerPrefs.SetString(StringManager.DOKAN_TOTAL_CASH, $"{newTmpDokanAmount}");
 
             StartCoroutine(MainController.instance.PostRequest(cigarJsonToSubmit, 4, OnSuccessfulCigarSubmit, OnRequestError));
         }
         else
+        {
             contactShantoPanel.SetActive(true);
+            processingPanel.SetActive(false);
+        }
     }
     void OnSuccessfulCigarSubmit(string msg)
     {
-        if (msg.Equals("Done"))
+        if (msg.Equals("\"Done\""))
         {
             PlayerPrefs.SetString(StringManager.CIGAR_TOTAL_CASH, $"{newTmpCigarAmount}");
             
             StartCoroutine(MainController.instance.PostRequest(shantoJsonToSubmit, 5, OnSuccessfulShantoSubmit, OnRequestError));
         }
         else
+        {
             contactShantoPanel.SetActive(true);
+            processingPanel.SetActive(false);
+        }
     }
     void OnSuccessfulShantoSubmit(string msg)
     {
-        if (msg.Equals("Done"))
+        if (msg.Equals("\"Done\""))
         {
             PlayerPrefs.SetString(StringManager.SHANTO_TOTAL_CASH, $"{newTmpShantoAmount}");
             PlayerPrefs.SetString(StringManager.ALREADY_SUBMITTED_TODAY, $"{dateString}");
@@ -933,8 +949,11 @@ public class ManagementController : MonoBehaviour
             successPanel.SetActive(true);
         }
         else
+        {
             contactShantoPanel.SetActive(true);
-        
+            processingPanel.SetActive(false);
+        }
+
     }
     void OnRequestError(string msg)
     {
