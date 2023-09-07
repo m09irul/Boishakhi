@@ -20,6 +20,8 @@ public class DailySellController : MonoBehaviour
     public TextMeshProUGUI[] cashOutText;
     public TextMeshProUGUI[] totalSellText;
     public TextMeshProUGUI sellListTitleText;
+    public TextMeshProUGUI dokanCashOutTitleText;
+    public TextMeshProUGUI cigarCashOutTitleText;
     public TextMeshProUGUI priceTitleText;
     public Calculator calculator;
     public GameObject sellDataContainerPrefab;
@@ -27,6 +29,8 @@ public class DailySellController : MonoBehaviour
     public Transform sellDataScrollbarViewport;
     string dateString, sellToInfo;
     public Button sellToButton;
+
+    public Button dokanSubmitButton, cigarSubmitButton;
 
     string mainJsonPref = "";
     string tmpJsonPref = "";
@@ -89,18 +93,51 @@ public class DailySellController : MonoBehaviour
         }
         calculator.isCalculatorSelected = !isAnyFieldFocused;
 
-        if (decimal.TryParse(fields[1].text, out decimal cash_inCigar) && decimal.TryParse(fields[0].text, out decimal priceCigar))
+        if (int.TryParse(fields[1].text, out int cash_inCigar) && int.TryParse(fields[0].text, out int priceCigar))
         {
-            cashOutText[0].text = (cash_inCigar - priceCigar).ToString();
+            if (priceCigar > 0)
+                cigarSubmitButton.interactable = true;
+            else
+                cigarSubmitButton.interactable = false;
+
+            var tmp = cash_inCigar - priceCigar;
+            if (tmp >= 0)
+            {
+                cigarCashOutTitleText.text = "†diZ: ";
+            }
+            else
+            {
+                cigarCashOutTitleText.text = "evwK: ";
+                PlayerPrefs.SetString(StringManager.BAKI, tmp.ToString());
+            }
+
+            cashOutText[0].text = tmp.ToString();
         }
         else
             cashOutText[0].text = "0";
-        if (decimal.TryParse(fields[3].text, out decimal cash_inDokan) && decimal.TryParse(fields[2].text, out decimal priceDokan))
+
+        if (int.TryParse(fields[3].text, out int cash_inDokan) && int.TryParse(fields[2].text, out int priceDokan))
         {
+            if (priceDokan > 0)
+                dokanSubmitButton.interactable = true;
+            else
+                dokanSubmitButton.interactable = false;
+
+            var tmp = cash_inDokan - priceDokan;
+            if (tmp >= 0)
+            {
+                dokanCashOutTitleText.text = "†diZ: ";
+            }
+            else
+            {
+                dokanCashOutTitleText.text = "evwK: ";
+                PlayerPrefs.SetString(StringManager.BAKI, tmp.ToString());
+            }
             cashOutText[1].text = (cash_inDokan - priceDokan).ToString();
         }
         else
             cashOutText[1].text = "0";
+
     }
 
     public void BringCalcDataToInputField(int index)
@@ -199,7 +236,6 @@ public class DailySellController : MonoBehaviour
     /// <param name="index"></param>
     public void SubmitSellData(int index)
     {
-
         // Get existing JSON data from PlayerPrefs
         var values = GetValues(index);
         mainJsonPref = values.mainJsonPref;
@@ -211,7 +247,6 @@ public class DailySellController : MonoBehaviour
 
         string time = DateTime.Now.ToString("HH:mm:ss");
 
-        
         existingJson = PlayerPrefs.GetString(tmpJsonPref, "{}");
         JObject tmpJsonData = GetJsonData(tmpJsonPref);
         JObject mainJsonData = GetJsonData(mainJsonPref);
@@ -243,34 +278,49 @@ public class DailySellController : MonoBehaviour
             mainJsonData[dateString]["Data"] = mainDateArray;
         }
 
-        JObject newData = new JObject(
-                new JProperty("id", PlayerPrefs.GetInt(id, 1)),
-                new JProperty("sellTo", sellToInfo),
-                new JProperty("price", price),
-                new JProperty("cash_in", cash_in),
-                new JProperty("cash_out", cash_out),
-                new JProperty("time", time)
-            );
-
-        tmpDateArray.Add(newData);
-        mainDateArray.Add(newData);
-
-        // Increment ID in PlayerPrefs
-        PlayerPrefs.SetInt(id, PlayerPrefs.GetInt(id, 1) + 1);
-
         //get total sell price
-        mainJsonData[dateString]["Total Sell"] = (Convert.ToDouble(tmpJsonData[dateString]["Total Sell"]) + Convert.ToDouble(price)).ToString();
-        tmpJsonData[dateString]["Total Sell"] = (Convert.ToDouble(tmpJsonData[dateString]["Total Sell"]) + Convert.ToDouble(price)).ToString();
+        if (int.TryParse(cash_in, out int cash_in_int) && int.TryParse(price, out int price_int))
+        {
+            if (cash_in_int != 0)
+            {
+                var tmp = cash_in_int - price_int;
+                var sell = cash_in_int;
 
-        // Store updated JSON data in PlayerPrefs
-        PlayerPrefs.SetString(tmpJsonPref, tmpJsonData.ToString());
-        PlayerPrefs.SetString(mainJsonPref, mainJsonData.ToString());
+                if (tmp >= 0)
+                {
+                    sell = cash_in_int - tmp;
 
-        UpdateTotalSellUI(mainJsonData[dateString]["Total Sell"].ToString(), index);
+                }
 
-        StartCoroutine(MainController.instance.PostRequest(PlayerPrefs.GetString(tmpJsonPref, "{}"), index + 1, UpdateJsonOnEachSell));
+                JObject newData = new JObject(
+                    new JProperty("id", PlayerPrefs.GetInt(id, 1)),
+                    new JProperty("sellTo", sellToInfo),
+                    new JProperty("price", price),
+                    new JProperty("cash_in", cash_in),
+                    new JProperty("cash_out", tmp.ToString()),
+                    new JProperty("time", time)
+                );
 
-        CleanCalcAndFields(index);
+                tmpDateArray.Add(newData);
+                mainDateArray.Add(newData);
+
+                // Increment ID in PlayerPrefs
+                PlayerPrefs.SetInt(id, PlayerPrefs.GetInt(id, 1) + 1);
+
+                mainJsonData[dateString]["Total Sell"] = (Convert.ToInt32(tmpJsonData[dateString]["Total Sell"]) + sell).ToString();
+                tmpJsonData[dateString]["Total Sell"] = (Convert.ToInt32(tmpJsonData[dateString]["Total Sell"]) + sell).ToString();
+
+                // Store updated JSON data in PlayerPrefs
+                PlayerPrefs.SetString(tmpJsonPref, tmpJsonData.ToString());
+                PlayerPrefs.SetString(mainJsonPref, mainJsonData.ToString());
+
+                UpdateTotalSellUI(mainJsonData[dateString]["Total Sell"].ToString(), index);
+
+                StartCoroutine(MainController.instance.PostRequest(PlayerPrefs.GetString(tmpJsonPref, "{}"), index + 1, UpdateJsonOnEachSell));
+
+                CleanCalcAndFields(index);
+            }
+        }
     }
     string UpdateJsonForOldDates(string jsonString)
     {
