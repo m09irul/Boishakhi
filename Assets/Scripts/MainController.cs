@@ -45,7 +45,7 @@ public class MainController : MonoBehaviour
     {
         // Append the parameter to the URL
         var tmpUrl = getUrl + "?" + param;
-        print(tmpUrl);
+        //print(tmpUrl);
         // Create a new UnityWebRequest and set the method to GET
         var request = new UnityWebRequest(tmpUrl, "GET");
         request.downloadHandler = new DownloadHandlerBuffer();
@@ -59,7 +59,7 @@ public class MainController : MonoBehaviour
         }
         else
         {
-            print(request.downloadHandler.text);
+            //print(request.downloadHandler.text);
             callBack(request.downloadHandler.text);  
         }
     }
@@ -68,7 +68,7 @@ public class MainController : MonoBehaviour
         // Create a new UnityWebRequest and set the method to POST
         var request = new UnityWebRequest(postUrl, "POST");
         string requestBody = "{\"jsonData\":" + json + ",\"intValue\":" + intValue + "}";
-        print(requestBody);
+        //print(requestBody);
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(requestBody);
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
@@ -83,7 +83,7 @@ public class MainController : MonoBehaviour
         }
         else
         {
-            print(request.downloadHandler.text);
+            //print(request.downloadHandler.text);
             successCallBack(request.downloadHandler.text);
         }
     }

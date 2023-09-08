@@ -42,7 +42,8 @@ public class ManagementController : MonoBehaviour
     public Transform shantoCashInContainerParent;
     public Transform shantoCashOutContainerParent;
 
-    public TMP_InputField bakiField;
+    public TextMeshProUGUI bakiDeoaText;
+    public TMP_InputField bakiRecievedField;
     
     public List<TMP_InputField> expenseFields;
     public List<TMP_InputField> purchaseFields;
@@ -57,6 +58,7 @@ public class ManagementController : MonoBehaviour
     string dateString;
 
     int newTmpDokanAmount;
+    int newTmpBakiAmount;
     int newTmpCigarAmount;
     int newTmpShantoAmount;
 
@@ -83,7 +85,7 @@ public class ManagementController : MonoBehaviour
         shantoCashInAddButton.onClick.AddListener(()=>OnAddMoreFields(cigarShantoContainerPrefab, shantoCashInContainerParent, shantoCashInFields));
         shantoCashOutAddButton.onClick.AddListener(()=>OnAddMoreFields(cigarShantoContainerPrefab, shantoCashOutContainerParent, shantoCashOutFields));
 
-        allInputFields.Add(bakiField);
+        allInputFields.Add(bakiRecievedField);
         allInputFields.AddRange(expenseFields);
         allInputFields.AddRange(purchaseFields);
         allInputFields.AddRange(cigarCashInFields);
@@ -117,6 +119,7 @@ public class ManagementController : MonoBehaviour
         dokanCashTillToday.text = PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0");
         cigarCashTillToday.text = PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH, "0");
         shantoCashTillToday.text = PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH, "0");
+        bakiDeoaText.text = PlayerPrefs.GetString(StringManager.BAKI, "0");
 
         StartCoroutine(MainController.instance.GetRequest($"myInt={4}&myDate={MainController.instance.GetToday()}", UpdateTotalCash, OnRequestError));
     }
@@ -138,7 +141,8 @@ public class ManagementController : MonoBehaviour
         null,
         StringManager.CIGAR_TOTAL_CASH,
         null,
-        StringManager.OVREALL_TOTAL_CASH
+        StringManager.OVREALL_TOTAL_CASH,
+        StringManager.BAKI,
     };
 
         // Define a method to check if a value is valid
@@ -157,6 +161,7 @@ public class ManagementController : MonoBehaviour
         dokanCashTillToday.text = PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0");
         cigarCashTillToday.text = PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH, "0");
         shantoCashTillToday.text = PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH, "0");
+        bakiDeoaText.text = PlayerPrefs.GetString(StringManager.BAKI, "0");
     }
     public void OnListButtonClicked()
     {
@@ -200,14 +205,6 @@ public class ManagementController : MonoBehaviour
             string item = (string)element[1];
             string value = (string)element[2];
 
-            /*// Extract only the date value from the date string
-            date = date.Substring(0, 10);
-
-            // Reformat the date in day-month-year format
-            DateTime dateTime;
-            if (DateTime.TryParse(date, out dateTime))
-                date = dateTime.ToString("yyyy-MM-dd");*/
-
             // Append the values to the StringBuilder
             if (!string.IsNullOrEmpty(value) && value != "0")
             {
@@ -229,14 +226,6 @@ public class ManagementController : MonoBehaviour
             string date = (string)element[0];
             string item = (string)element[1];
             string value = (string)element[2];
-
-            /*// Extract only the date value from the date string
-            date = date.Substring(0, 10);
-
-            // Reformat the date in day-month-year format
-            DateTime dateTime;
-            if (DateTime.TryParse(date, out dateTime))
-                date = dateTime.ToString("yyyy-MM-dd");*/
 
             // Append the values to the StringBuilder
             if (!string.IsNullOrEmpty(value) && value != "0" && !item.Equals("Shanto") && !item.Equals("Rent") && !item.Equals("Dokan"))
@@ -305,14 +294,6 @@ public class ManagementController : MonoBehaviour
             string cashInNote = (string)element[2];
             string cashOutVal = (string)element[3];
             string cashOutNote = (string)element[4];
-
-            /*// Extract only the date value from the date string
-            date = date.Substring(0, 10);
-
-            // Reformat the date in day-month-year format
-            DateTime dateTime;
-            if (DateTime.TryParse(date, out dateTime))
-                date = dateTime.ToString("yyyy-MM-dd");*/
 
             // Append the values to the StringBuilder
             if (!string.IsNullOrEmpty(cashInVal) && cashInVal != "0")
@@ -392,14 +373,6 @@ public class ManagementController : MonoBehaviour
             string cashInNote = (string)element[2];
             string cashOutVal = (string)element[3];
             string cashOutNote = (string)element[4];
-
-            /*// Extract only the date value from the date string
-            date = date.Substring(0, 10);
-
-            // Reformat the date in day-month-year format
-            DateTime dateTime;
-            if (DateTime.TryParse(date, out dateTime))
-                date = dateTime.ToString("yyyy-MM-dd");*/
 
             // Append the values to the StringBuilder
             if (!string.IsNullOrEmpty(cashInVal) && cashInVal != "0")
@@ -493,7 +466,7 @@ public class ManagementController : MonoBehaviour
         {
             { dateString, new JObject
                 {
-                    { "Baki", bakiField.text },
+                    { "Baki", bakiRecievedField.text },
                     { "Expense", new JArray() },
                     { "Purchase", new JArray() }
                 }
@@ -677,7 +650,7 @@ public class ManagementController : MonoBehaviour
         int sellToHotel = 0;
         foreach (var item in dokanSellData[dateString]["Data"])
         {
-            if (int.TryParse((string)item["price"], out int tmpPrice))
+            if (int.TryParse((string)item["cash_in"], out int tmpPrice))
             {
                 if ((string)item["sellTo"] == "Hotel")
                 {
@@ -778,14 +751,16 @@ public class ManagementController : MonoBehaviour
 
         dailySellSummaryText.text = displayTextForDailySell;
 
-        ShowDailyDokanSummary(displayTextForDokanSell, expenseAmountFromFund, purchaseAmountFromFund, remainingCash);
+        ShowDailyDokanSummary(displayTextForDokanSell, expenseAmountFromFund, purchaseAmountFromFund, remainingCash, bakiAmount);
 
     }
-    void ShowDailyDokanSummary(string data, int expenseAmount, int purchaseAmount, int remainingCash)
+    void ShowDailyDokanSummary(string data, int expenseAmount, int purchaseAmount, int remainingCash, int bakiAmount)
     {
         int prevAmount = int.Parse(PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0"));
+        int prevBakiAmount = int.Parse(PlayerPrefs.GetString(StringManager.BAKI, "0"));
 
         newTmpDokanAmount = prevAmount - (expenseAmount + purchaseAmount) + remainingCash;
+        newTmpBakiAmount = prevBakiAmount - bakiAmount;
 
         data += "-------------------------\n";
         data += $"Total =   {newTmpDokanAmount}";
@@ -915,6 +890,7 @@ public class ManagementController : MonoBehaviour
         if (msg.Equals("\"Done\""))
         {
             PlayerPrefs.SetString(StringManager.DOKAN_TOTAL_CASH, $"{newTmpDokanAmount}");
+            PlayerPrefs.SetString(StringManager.BAKI, $"{newTmpBakiAmount}");
 
             StartCoroutine(MainController.instance.PostRequest(cigarJsonToSubmit, 4, OnSuccessfulCigarSubmit, OnRequestError));
         }
