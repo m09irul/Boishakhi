@@ -59,7 +59,7 @@ public class MainController : MonoBehaviour
         }
         else
         {
-            //print(request.downloadHandler.text);
+            print(request.downloadHandler.text);
             callBack(request.downloadHandler.text);  
         }
     }

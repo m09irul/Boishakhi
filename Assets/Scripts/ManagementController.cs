@@ -114,12 +114,32 @@ public class ManagementController : MonoBehaviour
             return "0";
 
     }
+    string GetTotalBakiSell()
+    {
+        //get total sell data:
+        JObject cigarSellData = JObject.Parse(PlayerPrefs.GetString(StringManager.CIGAR_SELL_MAIN, "{}"));
+        JObject dokanSellData = JObject.Parse(PlayerPrefs.GetString(StringManager.DOKAN_SELL_MAIN, "{}"));
+        string cigarBaki, dokanBaki;
+
+        if (cigarSellData[dateString] != null)
+            cigarBaki = cigarSellData[dateString]["Total Baki"] == null ? "0" : (string)cigarSellData[dateString]["Total Baki"];
+        else
+            cigarBaki = "0";
+        if (dokanSellData[dateString] != null)
+            dokanBaki = dokanSellData[dateString]["Total Baki"] == null ? "0" : (string)dokanSellData[dateString]["Total Baki"];
+        else
+            dokanBaki = "0";
+
+        return (Convert.ToInt32(cigarBaki) + Convert.ToInt32(dokanBaki)).ToString();
+
+    }
     public void UpdateTotalCashUI()
     {
         dokanCashTillToday.text = PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0");
         cigarCashTillToday.text = PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH, "0");
         shantoCashTillToday.text = PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH, "0");
-        bakiDeoaText.text = PlayerPrefs.GetString(StringManager.BAKI, "0");
+
+        bakiDeoaText.text = (Convert.ToInt32(PlayerPrefs.GetString(StringManager.BAKI, "0")) + Convert.ToInt32(GetTotalBakiSell())).ToString();
 
         StartCoroutine(MainController.instance.GetRequest($"myInt={4}&myDate={MainController.instance.GetToday()}", UpdateTotalCash, OnRequestError));
     }
@@ -161,7 +181,7 @@ public class ManagementController : MonoBehaviour
         dokanCashTillToday.text = PlayerPrefs.GetString(StringManager.DOKAN_TOTAL_CASH, "0");
         cigarCashTillToday.text = PlayerPrefs.GetString(StringManager.CIGAR_TOTAL_CASH, "0");
         shantoCashTillToday.text = PlayerPrefs.GetString(StringManager.SHANTO_TOTAL_CASH, "0");
-        bakiDeoaText.text = PlayerPrefs.GetString(StringManager.BAKI, "0");
+        bakiDeoaText.text = (Convert.ToInt32(PlayerPrefs.GetString(StringManager.BAKI, "0")) + Convert.ToInt32(GetTotalBakiSell())).ToString();
     }
     public void OnListButtonClicked()
     {
@@ -739,13 +759,14 @@ public class ManagementController : MonoBehaviour
 
         // Add remaining cash to JSON object
         dateData.Add("RemainingCash", remainingCash);
+        dateData.Add("BakiDeoa", GetTotalBakiSell());
 
         // Add remaining cash to JSON object
         dateData.Add("Date", dateString);
         dateData.Add("SellToHotel", sellToHotel);
         // Convert dateData to JSON string
         dokanJsonToSubmit = dateData.ToString();
-
+        print(dokanJsonToSubmit);
         displayTextForDailySell += "-------------------------\n";
         displayTextForDailySell += "SELL = " + (expenseAmountFromCash + purchaseAmountFromCash + remainingCash) + $"    Hotel({sellToHotel})";
 

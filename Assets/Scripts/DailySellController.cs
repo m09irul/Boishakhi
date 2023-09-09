@@ -79,7 +79,6 @@ public class DailySellController : MonoBehaviour
 
     private void Update()
     {
-        print(PlayerPrefs.GetString(StringManager.BAKI, ""));
         bool isAnyFieldFocused = false;
         for (int i = 0; i < fields.Length; i++)
         {
@@ -294,7 +293,8 @@ public class DailySellController : MonoBehaviour
             }
             else
             {
-                mainJsonData[dateString]["Total Baki"] = (Convert.ToInt32(tmpJsonData[dateString]["Total Baki"]) + tmp).ToString(); 
+                mainJsonData[dateString]["Total Baki"] = (Convert.ToInt32(mainJsonData[dateString]["Total Baki"]) + tmp).ToString();
+                tmpJsonData[dateString]["Total Baki"] = (Convert.ToInt32(tmpJsonData[dateString]["Total Baki"]) + tmp).ToString(); 
             }
 
             JObject newData = new JObject(
