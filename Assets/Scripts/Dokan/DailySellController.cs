@@ -60,7 +60,7 @@ public class DailySellController : MonoBehaviour
     public void OnEnable()
     {
         // Format the date as a string
-        dateString = MainController.instance.GetToday();
+        dateString = DokanMainController.instance.GetToday();
 
         // Define an array of keys to update
         string[] keysToUpdate = new string[] {
@@ -322,7 +322,7 @@ public class DailySellController : MonoBehaviour
             PlayerPrefs.SetString(mainJsonPref, mainJsonData.ToString());
             print(mainJsonData);
 
-            StartCoroutine(MainController.instance.PostRequest(PlayerPrefs.GetString(tmpJsonPref, "{}"), index + 1, UpdateJsonOnEachSell));
+            StartCoroutine(DokanMainController.instance.PostRequest(PlayerPrefs.GetString(tmpJsonPref, "{}"), index + 1, UpdateJsonOnEachSell));
             
             CleanCalcAndFields(index);
 

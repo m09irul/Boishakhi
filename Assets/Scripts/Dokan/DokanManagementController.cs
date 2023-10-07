@@ -10,7 +10,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.Text;
 
-public class ManagementController : MonoBehaviour
+public class DokanManagementController : MonoBehaviour
 {
     public TextMeshProUGUI[] S_D_expenseTexts;
     public TextMeshProUGUI cigarCashInText;
@@ -98,7 +98,7 @@ public class ManagementController : MonoBehaviour
     public void OnEnable()
     {
         // Format the date as a string
-        dateString = MainController.instance.GetToday();
+        dateString = DokanMainController.instance.GetToday();
         
         UpdateTotalCashUI();
         
@@ -141,7 +141,7 @@ public class ManagementController : MonoBehaviour
 
         bakiDeoaText.text = (Convert.ToInt32(PlayerPrefs.GetString(StringManager.BAKI, "0")) + Convert.ToInt32(GetTotalBakiSell())).ToString();
 
-        StartCoroutine(MainController.instance.GetRequest($"myInt={4}&myDate={MainController.instance.GetToday()}", UpdateTotalCash, OnRequestError));
+        StartCoroutine(DokanMainController.instance.GetRequest($"myInt={4}&myDate={DokanMainController.instance.GetToday()}", UpdateTotalCash, OnRequestError));
     }
     void UpdateTotalCash(string respose)
     {
@@ -186,9 +186,9 @@ public class ManagementController : MonoBehaviour
     public void OnListButtonClicked()
     {
         processingPanel.SetActive(true);
-        StartCoroutine(MainController.instance.GetRequest($"myInt={1}&myDate={MainController.instance.GetToday()}", UpdateDokanCash, OnRequestError));
-        StartCoroutine(MainController.instance.GetRequest($"myInt={2}&myDate={MainController.instance.GetToday()}", UpdateCigarCash, OnRequestError));
-        StartCoroutine(MainController.instance.GetRequest($"myInt={3}&myDate={MainController.instance.GetToday()}", UpdateShantoCash, OnRequestError));
+        StartCoroutine(DokanMainController.instance.GetRequest($"myInt={1}&myDate={DokanMainController.instance.GetToday()}", UpdateDokanCash, OnRequestError));
+        StartCoroutine(DokanMainController.instance.GetRequest($"myInt={2}&myDate={DokanMainController.instance.GetToday()}", UpdateCigarCash, OnRequestError));
+        StartCoroutine(DokanMainController.instance.GetRequest($"myInt={3}&myDate={DokanMainController.instance.GetToday()}", UpdateShantoCash, OnRequestError));
     }
     void UpdateDokanCash(string response)
     {
@@ -902,7 +902,7 @@ public class ManagementController : MonoBehaviour
         {
             processingPanel.SetActive(true);
 
-            StartCoroutine(MainController.instance.PostRequest(dokanJsonToSubmit, 3, OnSuccessfulDokanSubmit, OnRequestError));
+            StartCoroutine(DokanMainController.instance.PostRequest(dokanJsonToSubmit, 3, OnSuccessfulDokanSubmit, OnRequestError));
         }
         
     }
@@ -913,7 +913,7 @@ public class ManagementController : MonoBehaviour
             PlayerPrefs.SetString(StringManager.DOKAN_TOTAL_CASH, $"{newTmpDokanAmount}");
             PlayerPrefs.SetString(StringManager.BAKI, $"{newTmpBakiAmount}");
 
-            StartCoroutine(MainController.instance.PostRequest(cigarJsonToSubmit, 4, OnSuccessfulCigarSubmit, OnRequestError));
+            StartCoroutine(DokanMainController.instance.PostRequest(cigarJsonToSubmit, 4, OnSuccessfulCigarSubmit, OnRequestError));
         }
         else
         {
@@ -927,7 +927,7 @@ public class ManagementController : MonoBehaviour
         {
             PlayerPrefs.SetString(StringManager.CIGAR_TOTAL_CASH, $"{newTmpCigarAmount}");
             
-            StartCoroutine(MainController.instance.PostRequest(shantoJsonToSubmit, 5, OnSuccessfulShantoSubmit, OnRequestError));
+            StartCoroutine(DokanMainController.instance.PostRequest(shantoJsonToSubmit, 5, OnSuccessfulShantoSubmit, OnRequestError));
         }
         else
         {

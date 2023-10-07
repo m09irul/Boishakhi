@@ -4,10 +4,9 @@ using System.Collections;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
-
-public class MainController : MonoBehaviour
+public class HotelMainController : MonoBehaviour
 {
-    public static MainController instance = null;
+    public static HotelMainController instance = null;
     private void Awake()
     {
         if (instance == null)
@@ -16,22 +15,20 @@ public class MainController : MonoBehaviour
             Destroy(gameObject);
 
     }
-    public ManagementController managementController;
-    public DailySellController dailySellController;
+    public HotelManagementController managementController;
 
     // The URL of the deployed web app
     private string postUrl = "https://script.google.com/macros/s/AKfycbxWKVj0LQ6Hsht8czyg_QwUWriguiCbZ5CM0780LKZL6VbQDUN5qfL2f2KXtuWxMyrV5g/exec";
-    private string getUrl = "https://script.google.com/macros/s/AKfycbylK6ALrw5nvNaIVDHjtK6nHUQsbemGbQtr62nwpxel8781LW9UX2_TdIpN8a-mk-I/exec";
+    private string getUrlDokan = "https://script.google.com/macros/s/AKfycbylK6ALrw5nvNaIVDHjtK6nHUQsbemGbQtr62nwpxel8781LW9UX2_TdIpN8a-mk-I/exec";
+    private string getUrlHotel = "https://script.google.com/macros/s/AKfycbycpmjUfS7alpeh89FXGTSQ75V6PwVoZYTQqc1SbqaJxPmGpWsnpxtnQt9mMLA3QM3u/exec";
 
     private void Start()
     {
-        dailySellController.OnStart();
         managementController.OnStart();
     }
     public string GetToday()
     {
         DateTime now = DateTime.Now;
-
         if (now.Hour < 3)
         {
             return now.AddDays(-1).Date.ToString("yyyy-MM-dd");
@@ -41,14 +38,19 @@ public class MainController : MonoBehaviour
             return now.Date.ToString("yyyy-MM-dd");
         }
     }
-    public IEnumerator GetRequest(string param, Action<string> callBack, Action<string> errorCallBack = null)
+    public IEnumerator GetRequest(string param, Action<string> callBack, Action<string> errorCallBack = null, bool getFromDokan = true)
     {
-        // Append the parameter to the URL
-        var tmpUrl = getUrl + "?" + param;
+        string tmpUrl;
+
+        if (getFromDokan)
+            tmpUrl = getUrlDokan + "?" + param;
+        else
+            tmpUrl = getUrlHotel + "?" + param;
+
         // Create a new UnityWebRequest and set the method to GET
         var request = new UnityWebRequest(tmpUrl, "GET");
         request.downloadHandler = new DownloadHandlerBuffer();
-
+        //print(tmpUrl);
         // Send the request and wait for a response
         yield return request.SendWebRequest();
 
@@ -58,8 +60,8 @@ public class MainController : MonoBehaviour
         }
         else
         {
-            print(request.downloadHandler.text);
-            callBack(request.downloadHandler.text);  
+            //print(request.downloadHandler.text);
+            callBack(request.downloadHandler.text);
         }
     }
     public IEnumerator PostRequest(string json, int intValue, Action<string> successCallBack = null, Action<string> errorCallBack = null)

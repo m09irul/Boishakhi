@@ -23,5 +23,6 @@ public static class StringManager
     public static string ALREADY_SUBMITTED_TODAY = "AllreadySubmittedToday";
 
     public static string BAKI = "Baki";
+    public static string HOTEL_SHABEK = "HotelShabek";
 
 }
