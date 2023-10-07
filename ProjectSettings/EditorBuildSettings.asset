@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Dokan Main.unity
     guid: ad47766c5f6ff2f4795482faf4c84c09
   - enabled: 1
