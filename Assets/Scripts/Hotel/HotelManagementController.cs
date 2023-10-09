@@ -180,6 +180,7 @@ public class HotelManagementController : MonoBehaviour
     public void OnAddMoreFields(GameObject prefab, Transform containerParent, List<TMP_InputField> listToAdd)
     {
         var tmp = Instantiate(prefab, containerParent);
+        tmp.transform.SetSiblingIndex(0);
         var tmp2 = tmp.GetComponentsInChildren<TMP_InputField>();
 
         listToAdd.AddRange(tmp2);
