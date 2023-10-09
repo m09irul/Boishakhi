@@ -5,10 +5,10 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Dokan Main.unity
     guid: ad47766c5f6ff2f4795482faf4c84c09
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/Hotel Main.unity
     guid: 15fadb97da2103944bdff9ab9c6a6c0a
   m_configObjects: {}

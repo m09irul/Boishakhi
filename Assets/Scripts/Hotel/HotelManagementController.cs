@@ -419,7 +419,7 @@ public class HotelManagementController : MonoBehaviour
         //print(hotelJsonToSubmit);
         displayTextForDailySell += "-------------------------\n";
         
-        sellAmount = (expenseAmountFromCash + purchaseAmountFromCash + nicheAmount - shabekAmount);
+        sellAmount = (expenseAmountFromCash + purchaseAmountFromCash + nicheAmount + cashAmount - shabekAmount);
         displayTextForDailySell += "SELL = " + sellAmount;
 
         dailySellSummaryText.text = displayTextForDailySell;
